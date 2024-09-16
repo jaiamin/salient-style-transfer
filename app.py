@@ -1,10 +1,11 @@
 from PIL import Image
+
+import spaces
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision.models as models
-import torchvision.utils as utils
 import gradio as gr
 
 device = 'cpu'
@@ -73,6 +74,7 @@ def save_img(img, original_size):
     return img
 
 
+@spaces.GPU
 def transfer_style(content_image):
     style_img_filename = 'StarryNight.jpg'
     img_size = 512
