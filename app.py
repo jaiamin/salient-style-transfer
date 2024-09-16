@@ -123,7 +123,9 @@ def transfer_style(content_image):
 
 interface = gr.Interface(
     fn=transfer_style, 
-    inputs=[gr.Image(label='Content', type='pil')], 
+    inputs=[
+        gr.Image(label='Content', type='pil', sources=['upload'])
+    ], 
     outputs=[
         gr.Image(label='Output', show_download_button=True),
         gr.Label(label='Progress')
