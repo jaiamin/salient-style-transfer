@@ -114,16 +114,19 @@ def transfer_style(content_image):
         total_loss.backward()
         optimizer.step()
 
-        yield save_img(generated_img, original_size)
+        yield save_img(generated_img, original_size), str(round(iter/iters*100))+'%'
         
-    yield save_img(generated_img, original_size)
+    yield save_img(generated_img, original_size), str(round(iter/iters*100))+'%'
 
 
 interface = gr.Interface(
     fn=transfer_style, 
-    inputs=[gr.Image(type='pil')], 
-    outputs='image',
+    inputs=[gr.Image(label='Content', type='pil')], 
+    outputs=[
+        gr.Image(label='Output', show_download_button=True),
+        gr.Label(label='Progress')
+    ],
     title="Starry Night Style Transfer",
     api_name='style',
-    allow_flagging='never'
-).launch()
+    allow_flagging='never',
+).launch(inbrowser=True)
