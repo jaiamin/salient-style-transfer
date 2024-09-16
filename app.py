@@ -1,5 +1,6 @@
 import time
 from PIL import Image
+from tqdm import tqdm
 
 import spaces
 import torch
@@ -85,7 +86,7 @@ style_options = {
 style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
 @spaces.GPU
-def inference(content_image, style_image):
+def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True)):
     print('-'*15)
     print('STYLE:', style_image)
     img_size = 512
@@ -104,8 +105,7 @@ def inference(content_image, style_image):
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
 
-    saved_image = None
-    for iter in range(iters+1):
+    for iter in tqdm(range(iters+1)):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
@@ -130,14 +130,10 @@ def inference(content_image, style_image):
         optimizer.zero_grad()
         total_loss.backward()
         optimizer.step()
-
-        if iter % 15 == 0:
-            saved_image = save_img(generated_img, original_size)
-        yield (content_image, saved_image), f'{str(round(iter/iters*100))}% | {(time.time()-st):.2f}s'
     
     et = time.time()
     print('TIME TAKEN:', et-st)
-    yield (content_image, save_img(generated_img, original_size)), f'{str(round(iter/iters*100))}% | {(et-st):.2f}s'
+    return (content_image, save_img(generated_img, original_size))
     
 css = """
 #style, #progress-label { height: 100px }
@@ -151,7 +147,6 @@ interface = gr.Interface(
     ], 
     outputs=[
         ImageSlider(position=0.15, label='Output', show_download_button=True, interactive=False, elem_id='output'),
-        gr.Label(label='Progress', elem_id='progress-label'),
     ],
     title="🖼️ Neural Style Transfer",
     api_name='style',
