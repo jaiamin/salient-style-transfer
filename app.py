@@ -87,6 +87,7 @@ style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
 @spaces.GPU
 def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True)):
+    yield None
     print('-'*15)
     print('STYLE:', style_image)
     img_size = 512
@@ -133,7 +134,7 @@ def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True))
     
     et = time.time()
     print('TIME TAKEN:', et-st)
-    return content_image, save_img(generated_img, original_size)
+    yield content_image, save_img(generated_img, original_size)
 
 
 interface = gr.Interface(
