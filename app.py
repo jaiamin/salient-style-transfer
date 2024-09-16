@@ -86,7 +86,8 @@ style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
 @spaces.GPU
 def inference(content_image, style_image):
-    print('STYLE STYLE', style_image)
+    print('-'*15)
+    print('STYLE:', style_image)
     img_size = 512
     content_img, original_size = load_img(content_image, img_size)
     content_img = content_img.to(device)
@@ -132,11 +133,11 @@ def inference(content_image, style_image):
 
         if iter % 15 == 0:
             saved_image = save_img(generated_img, original_size)
-        yield (content_image, saved_image), str(round(iter/iters*100))+'%'
+        yield (content_image, saved_image), f'{str(round(iter/iters*100))}% | {(time.time()-st):.2f}s'
     
     et = time.time()
     print('TIME TAKEN:', et-st)
-    yield (content_image, save_img(generated_img, original_size)), str(round(iter/iters*100))+'%'
+    yield (content_image, save_img(generated_img, original_size)), f'{str(round(iter/iters*100))}% | {(et-st):.2f}s'
     
 css = """
 #style, #progress-label { height: 100px }
