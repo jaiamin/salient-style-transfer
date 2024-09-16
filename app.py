@@ -126,4 +126,4 @@ interface = gr.Interface(
     title="Starry Night Style Transfer",
     api_name='style',
     allow_flagging='never'
-).launch(inbrowser=True, share=True)
+).launch()
