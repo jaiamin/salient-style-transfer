@@ -133,11 +133,8 @@ def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True))
     
     et = time.time()
     print('TIME TAKEN:', et-st)
-    return (content_image, save_img(generated_img, original_size))
-    
-css = """
-#style, #progress-label { height: 100px }
-"""
+    return content_image, save_img(generated_img, original_size)
+
 
 interface = gr.Interface(
     fn=inference, 
@@ -157,5 +154,5 @@ interface = gr.Interface(
         ['./content_images/Beach.jpg', 'Oil Painting'],
         ['./content_images/StandingOnCliff.png', 'Great Wave'],
     ],
-    css=css
+    cache_examples=False
 ).launch(inbrowser=True)
