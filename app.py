@@ -90,6 +90,7 @@ def transfer_style(content_image):
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
 
+    saved_image = None
     for iter in range(iters+1):
         generated_features = model(generated_img)
         content_features = model(content_img)
@@ -116,7 +117,11 @@ def transfer_style(content_image):
         total_loss.backward()
         optimizer.step()
 
-        yield save_img(generated_img, original_size), str(round(iter/iters*100))+'%'
+        if iter % 10 == 0:
+            saved_image = save_img(generated_img, original_size)
+            yield saved_image, str(round(iter/iters*100))+'%'
+        else:
+            yield saved_image, str(round(iter/iters*100))+'%'
         
     yield save_img(generated_img, original_size), str(round(iter/iters*100))+'%'
 
