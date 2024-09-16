@@ -1,3 +1,4 @@
+import time
 from PIL import Image
 
 import spaces
@@ -7,6 +8,7 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision.models as models
 import gradio as gr
+from gradio_imageslider import ImageSlider
 
 device = 'cpu'
 if torch.backends.mps.is_available():
@@ -74,19 +76,30 @@ def save_img(img, original_size):
     return img
 
 
+style_options = {
+    'Starry Night': 'StarryNight.jpg',
+    'Great Wave': 'GreatWave.jpg',
+    'Lego Bricks': 'LegoBricks.jpg',
+    'Oil Painting': 'OilPainting.jpg',
+}
+style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
+
 @spaces.GPU
-def transfer_style(content_image):
-    style_img_filename = 'StarryNight.jpg'
+def inference(content_image, style_image):
+    print('STYLE STYLE', style_image)
     img_size = 512
     content_img, original_size = load_img(content_image, img_size)
     content_img = content_img.to(device)
-    style_img = load_img_from_path(f'./style_images/{style_img_filename}', img_size)[0].to(device)
+    style_img = load_img_from_path(style_options[style_image], img_size)[0].to(device)
+    
+    print('CONTENT IMG SIZE:', original_size)
 
     iters = 100
     lr = 1e-1
     alpha = 1
     beta = 1
 
+    st = time.time()
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
 
@@ -117,25 +130,36 @@ def transfer_style(content_image):
         total_loss.backward()
         optimizer.step()
 
-        if iter % 10 == 0:
+        if iter % 15 == 0:
             saved_image = save_img(generated_img, original_size)
-            yield saved_image, str(round(iter/iters*100))+'%'
-        else:
-            yield saved_image, str(round(iter/iters*100))+'%'
-        
-    yield save_img(generated_img, original_size), str(round(iter/iters*100))+'%'
-
+        yield (content_image, saved_image), str(round(iter/iters*100))+'%'
+    
+    et = time.time()
+    print('TIME TAKEN:', et-st)
+    yield (content_image, save_img(generated_img, original_size)), str(round(iter/iters*100))+'%'
+    
+css = """
+#style, #progress-label { height: 100px }
+"""
 
 interface = gr.Interface(
-    fn=transfer_style, 
+    fn=inference, 
     inputs=[
-        gr.Image(label='Content', type='pil', sources=['upload'])
+        gr.Image(label='Content', type='pil', sources=['upload'], elem_id='content'),
+        gr.Dropdown(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value', elem_id='style'),
     ], 
     outputs=[
-        gr.Image(label='Output', show_download_button=True),
-        gr.Label(label='Progress')
+        ImageSlider(position=0.15, label='Output', show_download_button=True, interactive=False, elem_id='output'),
+        gr.Label(label='Progress', elem_id='progress-label'),
     ],
-    title="Starry Night Style Transfer",
+    title="🖼️ Neural Style Transfer",
     api_name='style',
-    allow_flagging='never',
+    allow_flagging='manual',
+    examples=[
+        ['./content_images/TajMahal.jpg', 'Starry Night'],
+        ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
+        ['./content_images/Beach.jpg', 'Oil Painting'],
+        ['./content_images/StandingOnCliff.png', 'Great Wave'],
+    ],
+    css=css
 ).launch(inbrowser=True)
