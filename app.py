@@ -10,7 +10,9 @@ import torchvision.transforms as transforms
 import torchvision.models as models
 import gradio as gr
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+if torch.cuda.is_available(): device = 'cuda'
+elif torch.backends.mps.is_available(): device = 'mps'
+else: device = 'cpu'
 print('DEVICE:', device)
 
 class VGG_19(nn.Module):
@@ -73,10 +75,14 @@ def save_img(img, original_size):
 
 
 style_options = {
+    # famous paintings
     'Starry Night': 'StarryNight.jpg',
     'Great Wave': 'GreatWave.jpg',
+    'Scream': 'Scream.jpg',
+    # styles
     'Lego Bricks': 'LegoBricks.jpg',
     'Oil Painting': 'OilPainting.jpg',
+    'Mosaic': 'Mosaic.jpg',
 }
 style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
@@ -139,7 +145,7 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
     with gr.Row():
         with gr.Column():
             content_image = gr.Image(label='Content', type='pil', sources=['upload'])
-            style_dropdown = gr.Dropdown(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
+            style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Accordion('Advanced Settings', open=False):
                 with gr.Group():
                     style_strength_slider = gr.Slider(label='Style Strength', minimum=0, maximum=100, step=5, value=50)
@@ -158,13 +164,17 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
             # page 1
             ['./content_images/TajMahal.jpg', 'Starry Night', 75],
             ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50],
+            ['./content_images/PaintedLadies.jpg', 'Scream', 50],
             ['./content_images/Beach.jpg', 'Oil Painting', 50],
             ['./content_images/StandingOnCliff.png', 'Great Wave', 75],
+            ['./content_images/SeaTurtle.jpg', 'Mosaic', 100],
             # page 2
             ['./content_images/Surfer.jpg', 'Starry Night', 75],
             ['./content_images/CameraGirl.jpg', 'Lego Bricks', 50],
+            ['./content_images/SeaTurtle.jpg', 'Scream', 50],
             ['./content_images/NYCSkyline.jpg', 'Oil Painting', 50],
             ['./content_images/GoldenRetriever.jpg', 'Great Wave', 75],
+            ['./content_images/TajMahal.jpg', 'Mosaic', 100],
         ],
         inputs=[content_image, style_dropdown, style_strength_slider],
         examples_per_page=len(style_options),
