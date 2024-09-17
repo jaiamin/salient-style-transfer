@@ -155,5 +155,5 @@ interface = gr.Interface(
         ['./content_images/Beach.jpg', 'Oil Painting'],
         ['./content_images/StandingOnCliff.png', 'Great Wave'],
     ],
-    cache_examples=False
+    cache_examples=True
 ).launch(inbrowser=True)
