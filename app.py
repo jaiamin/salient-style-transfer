@@ -150,7 +150,7 @@ css = """
 with gr.Blocks(css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
     with gr.Column(elem_id='container'):
-        content_and_output = gr.Image(show_label=False, type='pil', sources=['upload'], format='png')
+        content_and_output = gr.Image(show_label=False, type='pil', sources=['upload'], format='jpg')
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Choose a style', value='Starry Night', type='value')
         with gr.Accordion('Adjustments', open=False):
             with gr.Group():
