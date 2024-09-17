@@ -12,7 +12,6 @@ import torchvision.models as models
 import gradio as gr
 from gradio_imageslider import ImageSlider
 
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('DEVICE:', device)
 
