@@ -147,10 +147,18 @@ interface = gr.Interface(
     api_name='style',
     allow_flagging='auto',
     examples=[
+        # page 1
         ['./content_images/TajMahal.jpg', 'Starry Night'],
         ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
         ['./content_images/Beach.jpg', 'Oil Painting'],
         ['./content_images/StandingOnCliff.png', 'Great Wave'],
+        # page 2
+        ['./content_images/Surfer.jpg', 'Starry Night'],
+        ['./content_images/CameraGirl.jpg', 'Lego Bricks'],
+        ['./content_images/NYCSkyline.jpg', 'Oil Painting'],
+        ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
     ],
-    cache_examples='lazy'
+    examples_per_page=len(style_options),
+    cache_examples='lazy',
+    clear_btn=None
 ).launch(inbrowser=True)
