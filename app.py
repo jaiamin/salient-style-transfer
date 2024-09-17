@@ -80,7 +80,7 @@ style_options = {
 }
 style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
-@spaces.GPU
+@spaces.GPU(duration=25)
 def inference(content_image, style_image, style_strength, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
