@@ -131,6 +131,9 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
     yield save_img(generated_img, original_size)
 
 
+def set_slider(value):
+    return gr.update(value=value)
+    
 with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
     gr.HTML("<h1 style='text-align: center'>🖼️ Neural Style Transfer</h1>")
     with gr.Row():
@@ -138,12 +141,19 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
             content_image = gr.Image(label='Content', type='pil', sources=['upload'])
             style_dropdown = gr.Dropdown(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Accordion('Advanced Settings', open=False):
-                style_strength = gr.Slider(label='Style Strength', minimum=0, maximum=100, step=5, value=50)
+                style_strength_slider = gr.Slider(label='Style Strength', minimum=0, maximum=100, step=5, value=50)
+                with gr.Row():
+                    low_button = gr.Button('Low')
+                    medium_button = gr.Button('Medium')
+                    high_button = gr.Button('High')
+                low_button.click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
+                medium_button.click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
+                high_button.click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
             submit_button = gr.Button('Submit')
         with gr.Column():
             output_image = gr.Image(label='Output', show_download_button=True, interactive=False)
     
-    submit_button.click(fn=inference, inputs=[content_image, style_dropdown, style_strength], outputs=[output_image])
+    submit_button.click(fn=inference, inputs=[content_image, style_dropdown, style_strength_slider], outputs=[output_image])
     
     examples = gr.Examples(
         examples=[
@@ -158,7 +168,7 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
             ['./content_images/NYCSkyline.jpg', 'Oil Painting', 50],
             ['./content_images/GoldenRetriever.jpg', 'Great Wave', 75],
         ],
-        inputs=[content_image, style_dropdown, style_strength],
+        inputs=[content_image, style_dropdown, style_strength_slider],
         examples_per_page=len(style_options),
     )
     
