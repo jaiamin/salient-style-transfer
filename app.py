@@ -83,6 +83,7 @@ style_options = {
     'Lego Bricks': 'LegoBricks.jpg',
     'Oil Painting': 'OilPainting.jpg',
     'Mosaic': 'Mosaic.jpg',
+    '8Bit': '8Bit.jpg',
 }
 style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
@@ -107,7 +108,7 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
     
-    for _ in tqdm(range(iters)):
+    for _ in tqdm(range(iters), desc='The magic is happening ✨'):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
@@ -146,7 +147,7 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
         with gr.Column():
             content_image = gr.Image(label='Content', type='pil', sources=['upload'])
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
-            with gr.Accordion('Advanced Settings', open=False):
+            with gr.Accordion('Adjustments', open=False):
                 with gr.Group():
                     style_strength_slider = gr.Slider(label='Style Strength', minimum=0, maximum=100, step=5, value=50)
                     with gr.Row():
@@ -161,23 +162,11 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
     
     examples = gr.Examples(
         examples=[
-            # page 1
             ['./content_images/TajMahal.jpg', 'Starry Night', 75],
             ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50],
-            ['./content_images/PaintedLadies.jpg', 'Scream', 50],
-            ['./content_images/Beach.jpg', 'Oil Painting', 50],
-            ['./content_images/StandingOnCliff.png', 'Great Wave', 75],
-            ['./content_images/SeaTurtle.jpg', 'Mosaic', 100],
-            # page 2
-            ['./content_images/Surfer.jpg', 'Starry Night', 75],
-            ['./content_images/CameraGirl.jpg', 'Lego Bricks', 50],
-            ['./content_images/SeaTurtle.jpg', 'Scream', 50],
-            ['./content_images/NYCSkyline.jpg', 'Oil Painting', 50],
-            ['./content_images/GoldenRetriever.jpg', 'Great Wave', 75],
-            ['./content_images/TajMahal.jpg', 'Mosaic', 100],
+            ['./content_images/SeaTurtle.jpg', 'Mosaic', 100]
         ],
-        inputs=[content_image, style_dropdown, style_strength_slider],
-        examples_per_page=len(style_options),
+        inputs=[content_image, style_dropdown, style_strength_slider]
     )
     
 demo.launch(show_api=True)
