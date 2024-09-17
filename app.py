@@ -161,7 +161,7 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
     gr.Examples(
         fn=inference,
         examples=examples,
-        inputs=[content_image, style_dropdown],
+        inputs=[content_image, style_dropdown, style_strength],
         outputs=[output_image],
         examples_per_page=len(style_options),
         cache_examples='lazy',
