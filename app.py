@@ -131,19 +131,6 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
     yield save_img(generated_img, original_size)
 
 
-examples = [
-    # page 1
-    ['./content_images/TajMahal.jpg', 'Starry Night', 75],
-    ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50],
-    ['./content_images/Beach.jpg', 'Oil Painting', 50],
-    ['./content_images/StandingOnCliff.png', 'Great Wave', 75],
-    # page 2
-    ['./content_images/Surfer.jpg', 'Starry Night', 75],
-    ['./content_images/CameraGirl.jpg', 'Lego Bricks', 50],
-    ['./content_images/NYCSkyline.jpg', 'Oil Painting', 50],
-    ['./content_images/GoldenRetriever.jpg', 'Great Wave', 75],
-]
-
 with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
     gr.HTML("<h1 style='text-align: center'>🖼️ Neural Style Transfer</h1>")
     with gr.Row():
@@ -158,13 +145,22 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
     
     submit_button.click(fn=inference, inputs=[content_image, style_dropdown, style_strength], outputs=[output_image])
     
-    gr.Examples(
-        fn=inference,
-        examples=examples,
+    examples = gr.Examples(
+        examples=[
+            # page 1
+            ['./content_images/TajMahal.jpg', 'Starry Night', 75],
+            ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50],
+            ['./content_images/Beach.jpg', 'Oil Painting', 50],
+            ['./content_images/StandingOnCliff.png', 'Great Wave', 75],
+            # page 2
+            ['./content_images/Surfer.jpg', 'Starry Night', 75],
+            ['./content_images/CameraGirl.jpg', 'Lego Bricks', 50],
+            ['./content_images/NYCSkyline.jpg', 'Oil Painting', 50],
+            ['./content_images/GoldenRetriever.jpg', 'Great Wave', 75],
+        ],
         inputs=[content_image, style_dropdown, style_strength],
-        outputs=[output_image],
         examples_per_page=len(style_options),
         cache_examples='lazy',
     )
     
-demo.launch(inbrowser=True, show_api=True)
+demo.launch(show_api=True)
