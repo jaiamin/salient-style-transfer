@@ -10,7 +10,6 @@ import torch.amp as amp
 import torchvision.transforms as transforms
 import torchvision.models as models
 import gradio as gr
-from gradio_imageslider import ImageSlider
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('DEVICE:', device)
@@ -103,7 +102,7 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
     
-    for iter in tqdm(range(iters)):
+    for _ in tqdm(range(iters), desc=''):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
@@ -112,7 +111,6 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
         style_loss = 0
         
         for generated_feature, content_feature, style_feature in zip(generated_features, content_features, style_features):
-
             batch_size, n_feature_maps, height, width = generated_feature.size()
             
             content_loss += (torch.mean((generated_feature - content_feature) ** 2))
@@ -136,15 +134,15 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
 
 examples = [
     # page 1
-    ['./content_images/TajMahal.jpg', 'Starry Night'],
-    ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
-    ['./content_images/Beach.jpg', 'Oil Painting'],
-    ['./content_images/StandingOnCliff.png', 'Great Wave'],
+    ['./content_images/TajMahal.jpg', 'Starry Night', 75],
+    ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50],
+    ['./content_images/Beach.jpg', 'Oil Painting', 50],
+    ['./content_images/StandingOnCliff.png', 'Great Wave', 75],
     # page 2
-    ['./content_images/Surfer.jpg', 'Starry Night'],
-    ['./content_images/CameraGirl.jpg', 'Lego Bricks'],
-    ['./content_images/NYCSkyline.jpg', 'Oil Painting'],
-    ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
+    ['./content_images/Surfer.jpg', 'Starry Night', 75],
+    ['./content_images/CameraGirl.jpg', 'Lego Bricks', 50],
+    ['./content_images/NYCSkyline.jpg', 'Oil Painting', 50],
+    ['./content_images/GoldenRetriever.jpg', 'Great Wave', 75],
 ]
 
 with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
@@ -154,10 +152,10 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
             content_image = gr.Image(label='Content', type='pil', sources=['upload'])
             style_dropdown = gr.Dropdown(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Accordion('Advanced Settings', open=False):
-                style_strength = gr.Slider(label='Style Strength', minimum=1, maximum=200, step=1, value=100)
+                style_strength = gr.Slider(label='Style Strength', minimum=0, maximum=100, step=5, value=50)
             submit_button = gr.Button('Submit')
         with gr.Column():
-            output_image = ImageSlider(position=0.25, label='Output', show_download_button=True, interactive=False)
+            output_image = gr.Image(label='Output', show_download_button=True, interactive=False)
     
     submit_button.click(fn=inference, inputs=[content_image, style_dropdown, style_strength], outputs=[output_image])
     
