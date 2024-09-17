@@ -145,7 +145,7 @@ interface = gr.Interface(
     ],
     title="🖼️ Neural Style Transfer",
     api_name='style',
-    allow_flagging='manual',
+    allow_flagging='auto',
     examples=[
         ['./content_images/TajMahal.jpg', 'Starry Night'],
         ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
