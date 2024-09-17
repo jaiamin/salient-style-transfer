@@ -6,7 +6,6 @@ import spaces
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.amp as amp
 import torchvision.transforms as transforms
 import torchvision.models as models
 import gradio as gr
@@ -102,7 +101,7 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
     
-    for _ in tqdm(range(iters), desc='Creating'):
+    for _ in tqdm(range(iters)):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
