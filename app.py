@@ -12,7 +12,8 @@ import torchvision.models as models
 import gradio as gr
 from gradio_imageslider import ImageSlider
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = 'mps'
+# device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('DEVICE:', device)
 
 class VGG_19(nn.Module):
@@ -83,7 +84,7 @@ style_options = {
 style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
 @spaces.GPU
-def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True)):
+def inference(content_image, style_image, style_strength, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
     print('STYLE:', style_image)
@@ -94,7 +95,7 @@ def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True))
     
     print('CONTENT IMG SIZE:', original_size)
 
-    iters = 100
+    iters = style_strength
     lr = 1e-1
     alpha = 1
     beta = 1
@@ -102,8 +103,8 @@ def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True))
     st = time.time()
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
-
-    for iter in tqdm(range(iters+1)):
+    
+    for iter in tqdm(range(iters)):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
@@ -134,31 +135,40 @@ def inference(content_image, style_image, progress=gr.Progress(track_tqdm=True))
     yield content_image, save_img(generated_img, original_size)
 
 
-interface = gr.Interface(
-    fn=inference, 
-    inputs=[
-        gr.Image(label='Content', type='pil', sources=['upload'], elem_id='content'),
-        gr.Dropdown(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value', elem_id='style'),
-    ], 
-    outputs=[
-        ImageSlider(position=0.15, label='Output', show_download_button=True, interactive=False, elem_id='output'),
-    ],
-    title="🖼️ Neural Style Transfer",
-    api_name='style',
-    allow_flagging='auto',
-    examples=[
-        # page 1
-        ['./content_images/TajMahal.jpg', 'Starry Night'],
-        ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
-        ['./content_images/Beach.jpg', 'Oil Painting'],
-        ['./content_images/StandingOnCliff.png', 'Great Wave'],
-        # page 2
-        ['./content_images/Surfer.jpg', 'Starry Night'],
-        ['./content_images/CameraGirl.jpg', 'Lego Bricks'],
-        ['./content_images/NYCSkyline.jpg', 'Oil Painting'],
-        ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
-    ],
-    examples_per_page=len(style_options),
-    cache_examples='lazy',
-    clear_btn=None
-).launch(inbrowser=True)
+examples = [
+    # page 1
+    ['./content_images/TajMahal.jpg', 'Starry Night'],
+    ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
+    ['./content_images/Beach.jpg', 'Oil Painting'],
+    ['./content_images/StandingOnCliff.png', 'Great Wave'],
+    # page 2
+    ['./content_images/Surfer.jpg', 'Starry Night'],
+    ['./content_images/CameraGirl.jpg', 'Lego Bricks'],
+    ['./content_images/NYCSkyline.jpg', 'Oil Painting'],
+    ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
+]
+
+with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
+    gr.HTML("<h1 style='text-align: center'>🖼️ Neural Style Transfer</h1>")
+    with gr.Row():
+        with gr.Column():
+            content_image = gr.Image(label='Content', type='pil', sources=['upload'])
+            style_dropdown = gr.Dropdown(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
+            with gr.Accordion('Advanced Settings', open=False):
+                style_strength = gr.Slider(label='Style Strength', minimum=1, maximum=200, step=1, value=100)
+            submit_button = gr.Button('Submit')
+        with gr.Column():
+            output_image = ImageSlider(position=0.25, label='Output', show_download_button=True, interactive=False)
+    
+    submit_button.click(fn=inference, inputs=[content_image, style_dropdown, style_strength], outputs=[output_image])
+    
+    gr.Examples(
+        fn=inference,
+        examples=examples,
+        inputs=[content_image, style_dropdown],
+        outputs=[output_image],
+        examples_per_page=len(style_options),
+        cache_examples='lazy',
+    )
+    
+demo.launch(inbrowser=True, show_api=True)
