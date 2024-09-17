@@ -102,7 +102,7 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
     
-    for _ in tqdm(range(iters), desc=''):
+    for _ in tqdm(range(iters), desc='Creating'):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
@@ -129,7 +129,7 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
     
     et = time.time()
     print('TIME TAKEN:', et-st)
-    yield content_image, save_img(generated_img, original_size)
+    yield save_img(generated_img, original_size)
 
 
 examples = [
