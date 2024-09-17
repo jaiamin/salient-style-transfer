@@ -160,7 +160,6 @@ with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
         ],
         inputs=[content_image, style_dropdown, style_strength],
         examples_per_page=len(style_options),
-        cache_examples='lazy',
     )
     
 demo.launch(show_api=True)
