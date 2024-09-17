@@ -6,16 +6,14 @@ import spaces
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.amp as amp
 import torchvision.transforms as transforms
 import torchvision.models as models
 import gradio as gr
 from gradio_imageslider import ImageSlider
 
-device = 'cpu'
-if torch.backends.mps.is_available():
-    device = 'mps'
-if torch.cuda.is_available():
-    device = 'cuda'
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('DEVICE:', device)
 
 class VGG_19(nn.Module):
@@ -155,5 +153,5 @@ interface = gr.Interface(
         ['./content_images/Beach.jpg', 'Oil Painting'],
         ['./content_images/StandingOnCliff.png', 'Great Wave'],
     ],
-    cache_examples=True
+    cache_examples='lazy'
 ).launch(inbrowser=True)
