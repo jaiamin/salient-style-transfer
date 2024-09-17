@@ -9,6 +9,7 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision.models as models
 import gradio as gr
+from gradio_imageslider import ImageSlider
 
 if torch.cuda.is_available(): device = 'cuda'
 elif torch.backends.mps.is_available(): device = 'mps'
@@ -82,8 +83,7 @@ style_options = {
     # styles
     'Lego Bricks': 'LegoBricks.jpg',
     'Oil Painting': 'OilPainting.jpg',
-    'Mosaic': 'Mosaic.jpg',
-    '8Bit': '8Bit.jpg',
+    'Mosaic': 'Mosaic.jpg'
 }
 style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
 
@@ -140,33 +140,37 @@ def inference(content_image, style_image, style_strength, progress=gr.Progress(t
 
 def set_slider(value):
     return gr.update(value=value)
+
+css = """
+#container {
+    margin: 0 auto;
+    max-width: 550px;
+}
+"""
+
+with gr.Blocks(css=css) as demo:
+    gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
+    with gr.Column(elem_id='container'):
+        content_and_output = gr.Image(show_label=False, type='pil', sources=['upload'])
+        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Choose a style', value='Starry Night', type='value')
+        with gr.Accordion('Adjustments', open=False):
+            with gr.Group():
+                style_strength_slider = gr.Slider(label='Style Strength', minimum=0, maximum=100, step=5, value=50)
+                with gr.Row():
+                    low_button = gr.Button('Low').click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
+                    medium_button = gr.Button('Medium').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
+                    high_button = gr.Button('High').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
+        submit_button = gr.Button('Submit')
     
-with gr.Blocks(title='🖼️ Neural Style Transfer') as demo:
-    gr.HTML("<h1 style='text-align: center'>🖼️ Neural Style Transfer</h1>")
-    with gr.Row():
-        with gr.Column():
-            content_image = gr.Image(label='Content', type='pil', sources=['upload'])
-            style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
-            with gr.Accordion('Adjustments', open=False):
-                with gr.Group():
-                    style_strength_slider = gr.Slider(label='Style Strength', minimum=0, maximum=100, step=5, value=50)
-                    with gr.Row():
-                        low_button = gr.Button('Low').click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
-                        medium_button = gr.Button('Medium').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
-                        high_button = gr.Button('High').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
-            submit_button = gr.Button('Submit')
-        with gr.Column():
-            output_image = gr.Image(label='Output', show_download_button=True, interactive=False)
-    
-    submit_button.click(fn=inference, inputs=[content_image, style_dropdown, style_strength_slider], outputs=[output_image])
-    
-    examples = gr.Examples(
-        examples=[
-            ['./content_images/TajMahal.jpg', 'Starry Night', 75],
-            ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50],
-            ['./content_images/SeaTurtle.jpg', 'Mosaic', 100]
-        ],
-        inputs=[content_image, style_dropdown, style_strength_slider]
-    )
+        submit_button.click(fn=inference, inputs=[content_and_output, style_dropdown, style_strength_slider], outputs=[content_and_output])
+        
+        examples = gr.Examples(
+            examples=[
+                ['./content_images/TajMahal.jpg', 'Starry Night', 75],
+                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50],
+                ['./content_images/SeaTurtle.jpg', 'Mosaic', 100]
+            ],
+            inputs=[content_and_output, style_dropdown, style_strength_slider]
+        )
     
 demo.launch(show_api=True)
