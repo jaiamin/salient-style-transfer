@@ -9,7 +9,6 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision.models as models
 import gradio as gr
-from gradio_imageslider import ImageSlider
 
 if torch.cuda.is_available(): device = 'cuda'
 elif torch.backends.mps.is_available(): device = 'mps'
