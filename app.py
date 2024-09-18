@@ -1,3 +1,4 @@
+import os
 import time
 from PIL import Image
 from tqdm import tqdm
@@ -74,17 +75,8 @@ def save_img(img, original_size):
     return img
 
 
-style_options = {
-    # famous paintings
-    'Starry Night': 'StarryNight.jpg',
-    'Great Wave': 'GreatWave.jpg',
-    'Scream': 'Scream.jpg',
-    # styles
-    'Lego Bricks': 'LegoBricks.jpg',
-    'Oil Painting': 'OilPainting.jpg',
-    'Mosaic': 'Mosaic.jpg'
-}
-style_options = {k: f'./style_images/{v}' for k, v in style_options.items()}
+style_files = os.listdir('./style_images')
+style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
 
 @spaces.GPU(duration=30)
 def inference(content_image, style_image, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
