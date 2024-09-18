@@ -1,87 +1,34 @@
 import os
 import time
-from PIL import Image
+import datetime
 from tqdm import tqdm
 
 import spaces
 import torch
-import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
-import torchvision.models as models
 import gradio as gr
+
+from utils import load_img, load_img_from_path, save_img
+from vgg19 import VGG_19
 
 if torch.cuda.is_available(): device = 'cuda'
 elif torch.backends.mps.is_available(): device = 'mps'
 else: device = 'cpu'
 print('DEVICE:', device)
 
-class VGG_19(nn.Module):
-    def __init__(self):
-        super(VGG_19, self).__init__()
-        self.model = models.vgg19(pretrained=True).features[:30]
-        
-        for i, _ in enumerate(self.model):
-            if i in [4, 9, 18, 27]:
-                self.model[i] = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
-                
-    def forward(self, x):
-        features = []
-        
-        for i, layer in enumerate(self.model):
-            x = layer(x)
-            if i in [0, 5, 10, 19, 28]:
-                features.append(x)
-        return features
-    
 model = VGG_19().to(device)
 for param in model.parameters():
     param.requires_grad = False
-
-def load_img(img: Image, img_size):
-    original_size = img.size
-    
-    transform = transforms.Compose([
-        transforms.Resize((img_size, img_size)),
-        transforms.ToTensor()
-    ])
-    img = transform(img).unsqueeze(0)
-    return img, original_size
-
-def load_img_from_path(path_to_image, img_size):
-    img = Image.open(path_to_image)
-    original_size = img.size
-    
-    transform = transforms.Compose([
-        transforms.Resize((img_size, img_size)),
-        transforms.ToTensor()
-    ])
-    img = transform(img).unsqueeze(0)
-    return img, original_size
-
-def save_img(img, original_size):
-    img = img.cpu().clone()
-    img = img.squeeze(0)
-    
-    # address tensor value scaling and quantization
-    img = torch.clamp(img, 0, 1)
-    img = img.mul(255).byte()
-    
-    unloader = transforms.ToPILImage()
-    img = unloader(img)
-    
-    img = img.resize(original_size, Image.Resampling.LANCZOS)
-    
-    return img
 
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
 
-@spaces.GPU(duration=30)
+@spaces.GPU(duration=35)
 def inference(content_image, style_image, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
+    print('DATETIME:', datetime.datetime.now())
     print('STYLE:', style_image)
     img_size = 1024 if output_quality else 512
     content_img, original_size = load_img(content_image, img_size)
@@ -89,6 +36,8 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     style_img = load_img_from_path(style_options[style_image], img_size)[0].to(device)
     
     print('CONTENT IMG SIZE:', original_size)
+    print('STYLE STRENGTH:', style_strength)
+    print('HIGH QUALITY:', output_quality)
 
     iters = style_strength
     lr = 1e-1
