@@ -173,5 +173,8 @@ with gr.Blocks(css=css) as demo:
             ],
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
         )
-    
+
+# disable queue
+demo.queue = False
+demo.config['queue'] = False
 demo.launch(show_api=True, allowed_paths=['/tmp/gradio/'])
