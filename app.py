@@ -39,7 +39,7 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     print('STYLE STRENGTH:', style_strength)
     print('HIGH QUALITY:', output_quality)
 
-    iters = 1
+    iters = 50
     # learning rate determined by input
     lr = 0.001 + (0.099 / 99) * (style_strength - 1)
     alpha = 1
