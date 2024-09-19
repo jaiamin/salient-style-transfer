@@ -37,9 +37,11 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     
     print('CONTENT IMG SIZE:', original_size)
     print('STYLE STRENGTH:', style_strength)
+    print('HIGH QUALITY:', output_quality)
 
-    iters = style_strength
-    lr = 5e-2
+    iters = 50
+    # learning rate determined by input
+    lr = 0.001 + (0.099 / 99) * (style_strength - 1)
     alpha = 1
     beta = 1
 
@@ -47,7 +49,7 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
     
-    for _ in tqdm(range(iters), desc='The magic is happening ✨'):
+    for iter in tqdm(range(iters), desc='The magic is happening ✨'):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
@@ -91,7 +93,7 @@ with gr.Blocks(css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
     with gr.Column(elem_id='container'):
         content_and_output = gr.Image(show_label=False, type='pil', sources=['upload'], format='jpg')
-        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Choose a style', value='Starry Night', type='value')
+        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         with gr.Accordion('Adjustments', open=False):
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=100, step=1, value=50)
@@ -100,7 +102,7 @@ with gr.Blocks(css=css) as demo:
                     medium_button = gr.Button('Medium').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
                     high_button = gr.Button('High').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
             with gr.Group():
-                output_quality = gr.Checkbox(label='High Quality', info='Note: This takes longer, but improves output image quality')
+                output_quality = gr.Checkbox(label='More Realistic', info='Note: This takes longer, but improves output image quality')
         submit_button = gr.Button('Submit')
     
         submit_button.click(fn=inference, inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], outputs=[content_and_output])
