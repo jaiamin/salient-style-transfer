@@ -102,7 +102,7 @@ with gr.Blocks(css=css) as demo:
                     medium_button = gr.Button('Medium').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
                     high_button = gr.Button('High').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
             with gr.Group():
-                output_quality = gr.Checkbox(label='More Realistic', info='Note: This takes longer, but improves output image quality')
+                output_quality = gr.Checkbox(label='More Realistic', info='Note: This takes longer, but improves output image quality', value=True)
         submit_button = gr.Button('Submit')
     
         submit_button.click(fn=inference, inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], outputs=[content_and_output])
