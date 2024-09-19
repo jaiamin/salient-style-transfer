@@ -8,7 +8,7 @@ import torch
 import torch.optim as optim
 import gradio as gr
 
-from utils import load_img, load_img_from_path, save_img
+from utils import preprocess_img, preprocess_img_from_path, postprocess_img
 from vgg19 import VGG_19
 
 if torch.cuda.is_available(): device = 'cuda'
@@ -31,15 +31,15 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     print('DATETIME:', datetime.datetime.now())
     print('STYLE:', style_image)
     img_size = 1024 if output_quality else 512
-    content_img, original_size = load_img(content_image, img_size)
+    content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
-    style_img = load_img_from_path(style_options[style_image], img_size)[0].to(device)
+    style_img = preprocess_img_from_path(style_options[style_image], img_size)[0].to(device)
     
     print('CONTENT IMG SIZE:', original_size)
     print('STYLE STRENGTH:', style_strength)
     print('HIGH QUALITY:', output_quality)
 
-    iters = 50
+    iters = 1
     # learning rate determined by input
     lr = 0.001 + (0.099 / 99) * (style_strength - 1)
     alpha = 1
@@ -49,7 +49,7 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
     
-    for iter in tqdm(range(iters), desc='The magic is happening ✨'):
+    for _ in tqdm(range(iters), desc='The magic is happening ✨'):
         generated_features = model(generated_img)
         content_features = model(content_img)
         style_features = model(style_img)
@@ -76,7 +76,7 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     
     et = time.time()
     print('TIME TAKEN:', et-st)
-    yield save_img(generated_img, original_size)
+    yield postprocess_img(generated_img, original_size)
 
 
 def set_slider(value):
@@ -92,7 +92,7 @@ css = """
 with gr.Blocks(css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
     with gr.Column(elem_id='container'):
-        content_and_output = gr.Image(show_label=False, type='pil', sources=['upload'], format='jpg')
+        content_and_output = gr.Image(show_label=False, type='pil', sources=['upload'], format='jpg', show_download_button=False)
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         with gr.Accordion('Adjustments', open=False):
             with gr.Group():
@@ -103,9 +103,34 @@ with gr.Blocks(css=css) as demo:
                     high_button = gr.Button('High').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
             with gr.Group():
                 output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.', value=True)
-        submit_button = gr.Button('Submit')
+        
+        submit_button = gr.Button('Submit', variant='primary')
+        download_button = gr.DownloadButton(label='Download Image', visible=False)
+        
+        def save_generated_image(img):
+            output_path = 'generated.jpg'
+            img.save(output_path)
+            return output_path
     
-        submit_button.click(fn=inference, inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], outputs=[content_and_output])
+        submit_button.click(
+            fn=inference, 
+            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], 
+            outputs=[content_and_output]
+        ).then(
+            fn=save_generated_image,
+            inputs=[content_and_output],
+            outputs=[download_button]
+        ).then(
+            fn=lambda _: gr.update(visible=True),
+            inputs=[],
+            outputs=[download_button]
+        )
+        
+        content_and_output.change(
+            fn=lambda _: gr.update(visible=False),
+            inputs=[content_and_output],
+            outputs=[download_button]
+        )
         
         examples = gr.Examples(
             examples=[

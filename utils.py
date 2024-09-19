@@ -3,7 +3,7 @@ from PIL import Image
 import torch
 import torchvision.transforms as transforms
 
-def load_img(img: Image, img_size):
+def preprocess_img(img: Image, img_size):
     original_size = img.size
     
     transform = transforms.Compose([
@@ -13,7 +13,7 @@ def load_img(img: Image, img_size):
     img = transform(img).unsqueeze(0)
     return img, original_size
 
-def load_img_from_path(path_to_image, img_size):
+def preprocess_img_from_path(path_to_image, img_size):
     img = Image.open(path_to_image)
     original_size = img.size
     
@@ -24,7 +24,7 @@ def load_img_from_path(path_to_image, img_size):
     img = transform(img).unsqueeze(0)
     return img, original_size
 
-def save_img(img, original_size):
+def postprocess_img(img, original_size):
     img = img.cpu().clone()
     img = img.squeeze(0)
     
