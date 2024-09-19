@@ -25,12 +25,12 @@ style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
 
 @spaces.GPU(duration=35)
-def inference(content_image, style_image, style_strength, progress=gr.Progress(track_tqdm=True)):
+def inference(content_image, style_image, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
     print('DATETIME:', datetime.datetime.now())
     print('STYLE:', style_image)
-    img_size = 512
+    img_size = 1024 if output_quality else 512
     content_img, original_size = load_img(content_image, img_size)
     content_img = content_img.to(device)
     style_img = load_img_from_path(style_options[style_image], img_size)[0].to(device)
@@ -99,17 +99,19 @@ with gr.Blocks(css=css) as demo:
                     low_button = gr.Button('Low').click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
                     medium_button = gr.Button('Medium').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
                     high_button = gr.Button('High').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
+            with gr.Group():
+                output_quality = gr.Checkbox(label='High Quality', info='Note: This takes longer, but improves output image quality')
         submit_button = gr.Button('Submit')
     
-        submit_button.click(fn=inference, inputs=[content_and_output, style_dropdown, style_strength_slider], outputs=[content_and_output])
+        submit_button.click(fn=inference, inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], outputs=[content_and_output])
         
         examples = gr.Examples(
             examples=[
-                ['./content_images/TajMahal.jpg', 'Starry Night', 75, False],
-                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50, False],
-                ['./content_images/SeaTurtle.jpg', 'Mosaic', 100, False]
+                ['./content_images/TajMahal.jpg', 'Starry Night', 75, True],
+                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50, True],
+                ['./content_images/SeaTurtle.jpg', 'Mosaic', 100, True]
             ],
-            inputs=[content_and_output, style_dropdown, style_strength_slider]
+            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
         )
 
 # disable queue
