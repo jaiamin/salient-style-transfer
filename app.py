@@ -9,14 +9,14 @@ import torch.optim as optim
 import gradio as gr
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
-from vgg19 import VGG_19
+from vgg16 import VGG_16
 
 if torch.cuda.is_available(): device = 'cuda'
 elif torch.backends.mps.is_available(): device = 'mps'
 else: device = 'cpu'
 print('DEVICE:', device)
 
-model = VGG_19().to(device)
+model = VGG_16().to(device)
 for param in model.parameters():
     param.requires_grad = False
 
