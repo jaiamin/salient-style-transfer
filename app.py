@@ -126,7 +126,6 @@ with gr.Blocks(css=css) as demo:
             outputs=[content_and_output]
         ).then(
             fn=lambda: gr.update(visible=True),
-            inputs=[],
             outputs=[download_button]
         )
         
