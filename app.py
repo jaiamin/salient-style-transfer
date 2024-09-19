@@ -119,4 +119,4 @@ with gr.Blocks(css=css) as demo:
 # disable queue
 demo.queue = False
 demo.config['queue'] = False
-demo.launch(show_api=True, allowed_paths=['/tmp/gradio/'])
+demo.launch(show_api=False)
