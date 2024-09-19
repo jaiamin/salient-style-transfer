@@ -24,7 +24,7 @@ for param in model.parameters():
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
 
-@spaces.GPU(duration=35)
+@spaces.GPU(duration=20)
 def inference(content_image, style_image, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
@@ -102,7 +102,7 @@ with gr.Blocks(css=css) as demo:
                     medium_button = gr.Button('Medium').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
                     high_button = gr.Button('High').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
             with gr.Group():
-                output_quality = gr.Checkbox(label='More Realistic', info='Note: This takes longer, but improves output image quality', value=True)
+                output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.', value=True)
         submit_button = gr.Button('Submit')
     
         submit_button.click(fn=inference, inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], outputs=[content_and_output])
