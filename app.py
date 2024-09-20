@@ -153,7 +153,7 @@ with gr.Blocks(css=css) as demo:
                 ['./content_images/SeaTurtle.jpg', 'Oil Painting'],
                 ['./content_images/NYCSkyline.jpg', 'Scream']
             ],
-            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
+            inputs=[content_and_output, style_dropdown]
         )
 
 # disable queue
