@@ -24,7 +24,7 @@ for param in model.parameters():
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
 optimal_settings = {
-    'Starry Night': (100, True),
+    'Starry Night': (100, False),
     'Lego Bricks': (100, False),
     'Mosaic': (100, False),
     'Oil Painting': (100, False),
