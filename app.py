@@ -172,7 +172,6 @@ with gr.Blocks(css=css) as demo:
             inputs=[content_and_output, style_dropdown]
         )
 
-# disable queue
 demo.queue = False
 demo.config['queue'] = False
 demo.launch(show_api=False)
