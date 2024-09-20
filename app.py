@@ -120,7 +120,8 @@ with gr.Blocks(css=css) as demo:
         submit_button = gr.Button('Submit', variant='primary')
         download_button = gr.DownloadButton(label='Download Image', visible=False)
 
-        def save_image(img, filename='generated.jpg'):
+        def save_image(img):
+            filename = 'generated.jpg'
             img.save(filename)
             return filename
         
@@ -129,10 +130,11 @@ with gr.Blocks(css=css) as demo:
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], 
             outputs=[content_and_output]
         ).then(
-            fn=lambda img: save_image(img),
-            inputs=[content_and_output]
+            fn=save_image,
+            inputs=[content_and_output],
+            outputs=[download_button]
         ).then(
-            fn=lambda: gr.update(visible=True, value='generated.jpg'),
+            fn=lambda: gr.update(visible=True),
             outputs=[download_button]
         )
         

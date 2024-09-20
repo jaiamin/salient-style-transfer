@@ -167,3 +167,4 @@ cython_debug/
 # Gradio
 gradio_cached_examples
 flagged
+generated.jpg
