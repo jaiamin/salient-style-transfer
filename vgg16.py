@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torchvision.models as models
 
-""" VGG_19 Architecture
+""" VGG_16 Architecture
 VGG(
   (features): Sequential(
     (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
@@ -20,27 +20,21 @@ VGG(
     (13): ReLU(inplace=True)
     (14): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     (15): ReLU(inplace=True)
-    (16): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-    (17): ReLU(inplace=True)
-    (18): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
-    (19): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (16): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (17): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (18): ReLU(inplace=True)
+    (19): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     (20): ReLU(inplace=True)
     (21): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     (22): ReLU(inplace=True)
-    (23): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-    (24): ReLU(inplace=True)
-    (25): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-    (26): ReLU(inplace=True)
-    (27): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (23): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (24): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (25): ReLU(inplace=True)
+    (26): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (27): ReLU(inplace=True)
     (28): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     (29): ReLU(inplace=True)
-    (30): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-    (31): ReLU(inplace=True)
-    (32): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-    (33): ReLU(inplace=True)
-    (34): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-    (35): ReLU(inplace=True)
-    (36): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (30): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
   )
   (avgpool): AdaptiveAvgPool2d(output_size=(7, 7))
   (classifier): Sequential(
@@ -55,13 +49,13 @@ VGG(
 )
 """
 
-class VGG_19(nn.Module):
+class VGG_16(nn.Module):
     def __init__(self):
-        super(VGG_19, self).__init__()
+        super(VGG_16, self).__init__()
         self.model = models.vgg19(weights='DEFAULT').features[:30]
         
         for i, _ in enumerate(self.model):
-            if i in [4, 9, 18, 27]:
+            if i in [4, 9, 16, 23]:
                 self.model[i] = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
                 
     def forward(self, x):
@@ -69,11 +63,11 @@ class VGG_19(nn.Module):
         
         for i, layer in enumerate(self.model):
             x = layer(x)
-            if i in [0, 5, 10, 19, 28]:
+            if i in [0, 5, 10, 17, 24]:
                 features.append(x)
         return features
     
 
 if __name__ == '__main__':
-    model = VGG_19()
+    model = VGG_16()
     print(model)
