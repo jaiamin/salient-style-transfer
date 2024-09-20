@@ -25,7 +25,7 @@ style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
 optimal_settings = {
     'Starry Night': (100, True),
-    'Lego Bricks': (50, False),
+    'Lego Bricks': (100, False),
     'Mosaic': (100, False),
     'Oil Painting': (100, False),
     'Scream': (75, True),
@@ -148,9 +148,10 @@ with gr.Blocks(css=css) as demo:
         
         examples = gr.Examples(
             examples=[
-                ['./content_images/TajMahal.jpg', 'Starry Night', 75, True],
-                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', 50, True],
-                ['./content_images/SeaTurtle.jpg', 'Mosaic', 100, True]
+                ['./content_images/TajMahal.jpg', 'Starry Night', *optimal_settings['Starry Night']],
+                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', *optimal_settings['Lego Bricks']],
+                ['./content_images/SeaTurtle.jpg', 'Oil Painting', *optimal_settings['Oil Painting']],
+                ['./content_images/NYCSkyline.jpg', 'Scream', *optimal_settings['Scream']]
             ],
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
         )
