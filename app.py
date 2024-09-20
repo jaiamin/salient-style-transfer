@@ -86,9 +86,8 @@ def inference(content_image, style_name, style_strength, output_quality, progres
 
     with torch.no_grad():
         content_features = model(content_img)
-        style_features = cached_style_features[style_name]
-    if img_size == 512: style_features = style_features[0]
-    else: style_features = style_features[1]
+    if img_size == 512: style_features = cached_style_features[style_name][0]
+    else: style_features = cached_style_features[style_name][1]
     
     for _ in tqdm(range(iters), desc='The magic is happening ✨'):
         optimizer.zero_grad()
