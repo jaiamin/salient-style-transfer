@@ -131,7 +131,7 @@ with gr.Blocks(css=css) as demo:
                     medium_button = gr.Button('Medium', size='sm').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
                     high_button = gr.Button('High', size='sm').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
             with gr.Group():
-                output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.', value=True)
+                output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.')
         
         submit_button = gr.Button('Submit', variant='primary')
         download_button = gr.DownloadButton(label='Download Image', visible=False)
