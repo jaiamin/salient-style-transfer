@@ -34,6 +34,14 @@ optimal_settings = {
     'Watercolor': (10, False),
 }
 
+cached_style_features = {}
+for style_name, style_img_path in style_options.items():
+    style_img_512 = preprocess_img_from_path(style_img_path, 512)[0].to(device)
+    style_img_1024 = preprocess_img_from_path(style_img_path, 1024)[0].to(device)
+    with torch.no_grad():
+        style_features = (model(style_img_512), model(style_img_1024))
+    cached_style_features[style_name] = style_features
+
 def compute_loss(generated_features, content_features, style_features, alpha, beta):
     content_loss = 0
     style_loss = 0
@@ -53,16 +61,15 @@ def compute_loss(generated_features, content_features, style_features, alpha, be
     return alpha * content_loss + beta * style_loss
 
 @spaces.GPU(duration=20)
-def inference(content_image, style_image, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
+def inference(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
     print('DATETIME:', datetime.datetime.now())
-    print('STYLE:', style_image)
+    print('STYLE:', style_name)
     
     img_size = 1024 if output_quality else 512
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
-    style_img = preprocess_img_from_path(style_options[style_image], img_size)[0].to(device)
     
     print('CONTENT IMG SIZE:', original_size)
     print('STYLE STRENGTH:', style_strength)
@@ -80,7 +87,9 @@ def inference(content_image, style_image, style_strength, output_quality, progre
 
     with torch.no_grad():
         content_features = model(content_img)
-        style_features = model(style_img)
+        style_features = cached_style_features[style_name]
+    if img_size == 512: style_features = style_features[0]
+    else: style_features = style_features[1]
     
     for _ in tqdm(range(iters), desc='The magic is happening ✨'):
         optimizer.zero_grad()
