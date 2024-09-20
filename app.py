@@ -40,6 +40,7 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     print('-'*15)
     print('DATETIME:', datetime.datetime.now())
     print('STYLE:', style_image)
+    
     img_size = 1024 if output_quality else 512
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
@@ -58,10 +59,14 @@ def inference(content_image, style_image, style_strength, output_quality, progre
     st = time.time()
     generated_img = content_img.clone().requires_grad_(True)
     optimizer = optim.Adam([generated_img], lr=lr)
-    
-    for _ in tqdm(range(iters), desc='The magic is happening ✨'):
+
+    with torch.no_grad():
         content_features = model(content_img)
         style_features = model(style_img)
+    
+    for _ in tqdm(range(iters), desc='The magic is happening ✨'):
+        optimizer.zero_grad()
+
         generated_features = model(generated_img)
         
         content_loss = 0
@@ -81,7 +86,6 @@ def inference(content_image, style_image, style_strength, output_quality, progre
 
         total_loss = alpha * content_loss + beta * style_loss
 
-        optimizer.zero_grad()
         total_loss.backward()
         optimizer.step()
     
