@@ -104,7 +104,7 @@ css = """
 with gr.Blocks(css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
     with gr.Column(elem_id='container'):
-        content_and_output = gr.Image(show_label=False, type='pil', sources=['upload'], format='jpg', show_download_button=False)
+        content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload'], format='jpg', show_download_button=False)
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', info='Note: Adjustments automatically optimize for different styles.', value='Starry Night', type='value')
         with gr.Accordion('Adjustments', open=False):
             with gr.Group():
@@ -148,10 +148,10 @@ with gr.Blocks(css=css) as demo:
         
         examples = gr.Examples(
             examples=[
-                ['./content_images/TajMahal.jpg', 'Starry Night', *optimal_settings['Starry Night']],
-                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', *optimal_settings['Lego Bricks']],
-                ['./content_images/SeaTurtle.jpg', 'Oil Painting', *optimal_settings['Oil Painting']],
-                ['./content_images/NYCSkyline.jpg', 'Scream', *optimal_settings['Scream']]
+                ['./content_images/TajMahal.jpg', 'Starry Night'],
+                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
+                ['./content_images/SeaTurtle.jpg', 'Oil Painting'],
+                ['./content_images/NYCSkyline.jpg', 'Scream']
             ],
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
         )
