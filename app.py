@@ -34,6 +34,24 @@ optimal_settings = {
     'Watercolor': (10, False),
 }
 
+def compute_loss(generated_features, content_features, style_features, alpha, beta):
+    content_loss = 0
+    style_loss = 0
+    
+    for generated_feature, content_feature, style_feature in zip(generated_features, content_features, style_features):
+        batch_size, n_feature_maps, height, width = generated_feature.size()
+        
+        content_loss += (torch.mean((generated_feature - content_feature) ** 2))
+        
+        G = torch.mm((generated_feature.view(batch_size * n_feature_maps, height * width)), (generated_feature.view(batch_size * n_feature_maps, height * width)).t())
+        A = torch.mm((style_feature.view(batch_size * n_feature_maps, height * width)), (style_feature.view(batch_size * n_feature_maps, height * width)).t())
+        
+        E_l = ((G - A) ** 2)
+        w_l = 1/5
+        style_loss += torch.mean(w_l * E_l)
+
+    return alpha * content_loss + beta * style_loss
+
 @spaces.GPU(duration=20)
 def inference(content_image, style_image, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
@@ -68,23 +86,7 @@ def inference(content_image, style_image, style_strength, output_quality, progre
         optimizer.zero_grad()
 
         generated_features = model(generated_img)
-        
-        content_loss = 0
-        style_loss = 0
-        
-        for generated_feature, content_feature, style_feature in zip(generated_features, content_features, style_features):
-            batch_size, n_feature_maps, height, width = generated_feature.size()
-            
-            content_loss += (torch.mean((generated_feature - content_feature) ** 2))
-            
-            G = torch.mm((generated_feature.view(batch_size * n_feature_maps, height * width)), (generated_feature.view(batch_size * n_feature_maps, height * width)).t())
-            A = torch.mm((style_feature.view(batch_size * n_feature_maps, height * width)), (style_feature.view(batch_size * n_feature_maps, height * width)).t())
-            
-            E_l = ((G - A) ** 2)
-            w_l = 1/5
-            style_loss += torch.mean(w_l * E_l)
-
-        total_loss = alpha * content_loss + beta * style_loss
+        total_loss = compute_loss(generated_features, content_features, style_features, alpha, beta)
 
         total_loss.backward()
         optimizer.step()
