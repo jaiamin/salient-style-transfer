@@ -173,7 +173,7 @@ with gr.Blocks(css=css) as demo:
         
         examples = gr.Examples(
             examples=[
-                ['./content_images/Bridge.jpg', 'Starry Night', *optimal_settings['Bridge']],
+                ['./content_images/Bridge.jpg', 'Starry Night', *optimal_settings['Starry Night']],
                 ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', *optimal_settings['Lego Bricks']],
                 ['./content_images/SeaTurtle.jpg', 'Oil Painting', *optimal_settings['Oil Painting']],
                 ['./content_images/NYCSkyline.jpg', 'Scream', *optimal_settings['Scream']]
