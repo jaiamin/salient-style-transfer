@@ -118,14 +118,20 @@ with gr.Blocks(css=css) as demo:
                 output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.', value=True)
         
         submit_button = gr.Button('Submit', variant='primary')
-        download_button = gr.DownloadButton(label='Download Image', value='generated.jpg', visible=False)
-    
+        download_button = gr.DownloadButton(label='Download Image', visible=False)
+
+        def save_image(img, filename='generated.jpg'):
+            img.save(filename)
+            return filename
+        
         submit_button.click(
             fn=inference, 
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], 
             outputs=[content_and_output]
         ).then(
-            fn=lambda: gr.update(visible=True),
+            fn=lambda img: save_image(img)
+        ).then(
+            fn=lambda: gr.update(visible=True, value='generated.jpg'),
             outputs=[download_button]
         )
         
