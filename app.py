@@ -75,8 +75,8 @@ def inference(content_image, style_name, style_strength, output_quality, progres
     print('STYLE STRENGTH:', style_strength)
     print('HIGH QUALITY:', output_quality)
 
-    iters = 50
-    lr = 0.001 + (0.099 / 99) * (style_strength - 1)
+    iters = 35
+    lr = 0.001 + (0.099 / 99) * (style_strength - 1) # [0.001, 0.1]
     alpha = 1
     beta = 1
 
