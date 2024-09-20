@@ -21,7 +21,6 @@ model = VGG_19().to(device)
 for param in model.parameters():
     param.requires_grad = False
 
-
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
 optimal_settings = {
@@ -41,6 +40,7 @@ for style_name, style_img_path in style_options.items():
     with torch.no_grad():
         style_features = (model(style_img_512), model(style_img_1024))
     cached_style_features[style_name] = style_features
+
 
 def compute_loss(generated_features, content_features, style_features, alpha, beta):
     content_loss = 0
@@ -76,7 +76,6 @@ def inference(content_image, style_name, style_strength, output_quality, progres
     print('HIGH QUALITY:', output_quality)
 
     iters = 50
-    # learning rate determined by input
     lr = 0.001 + (0.099 / 99) * (style_strength - 1)
     alpha = 1
     beta = 1
