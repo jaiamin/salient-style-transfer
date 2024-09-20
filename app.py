@@ -173,12 +173,12 @@ with gr.Blocks(css=css) as demo:
         
         examples = gr.Examples(
             examples=[
-                ['./content_images/TajMahal.jpg', 'Starry Night'],
-                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks'],
-                ['./content_images/SeaTurtle.jpg', 'Oil Painting'],
-                ['./content_images/NYCSkyline.jpg', 'Scream']
+                ['./content_images/TajMahal.jpg', 'Starry Night', *optimal_settings['Starry Night']],
+                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', *optimal_settings['Lego Bricks']],
+                ['./content_images/SeaTurtle.jpg', 'Oil Painting', *optimal_settings['Oil Painting']],
+                ['./content_images/NYCSkyline.jpg', 'Scream', *optimal_settings['Scream']]
             ],
-            inputs=[content_and_output, style_dropdown]
+            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
         )
 
 demo.queue = False
