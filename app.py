@@ -129,7 +129,8 @@ with gr.Blocks(css=css) as demo:
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], 
             outputs=[content_and_output]
         ).then(
-            fn=lambda img: save_image(img)
+            fn=lambda img: save_image(img),
+            inputs=[content_and_output]
         ).then(
             fn=lambda: gr.update(visible=True, value='generated.jpg'),
             outputs=[download_button]
