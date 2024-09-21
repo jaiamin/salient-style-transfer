@@ -17,6 +17,8 @@ else: device = 'cpu'
 print('DEVICE:', device)
 if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
 
+torch.backends.cudnn.benchmark = True
+
 model = VGG_19().to(device)
 for param in model.parameters():
     param.requires_grad = False
