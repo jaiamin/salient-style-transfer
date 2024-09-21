@@ -82,7 +82,7 @@ def inference(content_image, style_name, style_strength, output_quality, progres
 
     st = time.time()
     generated_img = content_img.clone().requires_grad_(True)
-    optimizer = optim.Adam([generated_img], lr=lr)
+    optimizer = optim.AdamW([generated_img], lr=lr)
 
     with torch.no_grad():
         content_features = model(content_img)
