@@ -49,13 +49,13 @@ def compute_loss(generated_features, content_features, style_features, alpha, be
     for generated_feature, content_feature, style_feature in zip(generated_features, content_features, style_features):
         batch_size, n_feature_maps, height, width = generated_feature.size()
         
-        content_loss += (torch.mean((generated_feature - content_feature) ** 2))
+        content_loss += torch.mean((generated_feature - content_feature) ** 2)
         
         G = torch.mm((generated_feature.view(batch_size * n_feature_maps, height * width)), (generated_feature.view(batch_size * n_feature_maps, height * width)).t())
         A = torch.mm((style_feature.view(batch_size * n_feature_maps, height * width)), (style_feature.view(batch_size * n_feature_maps, height * width)).t())
         
         E_l = ((G - A) ** 2)
-        w_l = 1/5
+        w_l = 1 / 5
         style_loss += torch.mean(w_l * E_l)
 
     return alpha * content_loss + beta * style_loss
@@ -86,8 +86,8 @@ def inference(content_image, style_name, style_strength, output_quality, progres
 
     with torch.no_grad():
         content_features = model(content_img)
-    if img_size == 512: style_features = cached_style_features[style_name][0]
-    else: style_features = cached_style_features[style_name][1]
+    
+    style_features = cached_style_features[style_name][0 if img_size == 512 else 1]
     
     for _ in tqdm(range(iters), desc='The magic is happening ✨'):
         optimizer.zero_grad()
