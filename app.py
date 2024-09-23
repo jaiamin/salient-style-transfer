@@ -1,6 +1,6 @@
 import os
 import time
-import datetime
+from datetime import datetime, timezone, timedelta
 from tqdm import tqdm
 
 import spaces
@@ -64,7 +64,7 @@ def compute_loss(generated_features, content_features, style_features, alpha, be
 def inference(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
-    print('DATETIME:', datetime.datetime.now())
+    print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4))
     print('STYLE:', style_name)
     
     img_size = 1024 if output_quality else 512

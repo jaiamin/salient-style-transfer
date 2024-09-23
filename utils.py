@@ -24,9 +24,6 @@ def postprocess_img(img, original_size):
     img = torch.clamp(img, 0, 1)
     img = img.mul(255).byte()
     
-    unloader = transforms.ToPILImage()
-    img = unloader(img)
-    
+    img = transforms.ToPILImage()(img)
     img = img.resize(original_size, Image.Resampling.LANCZOS)
-    
     return img
