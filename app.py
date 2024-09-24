@@ -16,8 +16,6 @@ else: device = 'cpu'
 print('DEVICE:', device)
 if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
 
-torch.backends.cuda.matmul.allow_tf32 = False
-
 model = VGG_19().to(device).eval()
 for param in model.parameters():
     param.requires_grad = False
