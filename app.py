@@ -16,8 +16,6 @@ else: device = 'cpu'
 print('DEVICE:', device)
 if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
 
-torch.backends.cuda.matmul.allow_tf32 = False
-
 model = VGG_19().to(device).eval()
 for param in model.parameters():
     param.requires_grad = False
@@ -43,7 +41,7 @@ for style_name, style_img_path in style_options.items():
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=10)
-def run(content_image, style_name, style_strength, output_quality, num_iters, optimizer, progress=gr.Progress(track_tqdm=True)):
+def run(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     img_size = 1024 if output_quality else 512
     content_img, original_size = preprocess_img(content_image, img_size)
@@ -64,9 +62,7 @@ def run(content_image, style_name, style_strength, output_quality, num_iters, op
         model=model,
         content_image=content_img,
         style_features=style_features,
-        lr=converted_lr,
-        iterations=num_iters,
-        optim_caller=getattr(torch.optim, optimizer),
+        lr=converted_lr
     )
     et = time.time()
     print('TIME TAKEN:', et-st)
@@ -92,8 +88,7 @@ with gr.Blocks(css=css) as demo:
     with gr.Column(elem_id='container'):
         content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', info='Note: Adjustments automatically optimize for different styles.', value='Starry Night', type='value')
-        
-        with gr.Accordion('Adjustments', open=True):
+        with gr.Accordion('Adjustments', open=False):
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=100, step=1, value=50)
                 
@@ -103,10 +98,6 @@ with gr.Blocks(css=css) as demo:
                     high_button = gr.Button('High', size='sm').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
             with gr.Group():
                 output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.')
-                
-        with gr.Accordion('Advanced Settings', open=False):
-            num_iters_slider = gr.Slider(label='Iterations', minimum=1, maximum=50, step=1, value=35)
-            optimizer_radio = gr.Radio(label='Optimizer', choices=['Adam', 'AdamW', 'LBFGS'], value='AdamW')
         
         submit_button = gr.Button('Submit', variant='primary')
         download_button = gr.DownloadButton(label='Download Image', visible=False)
@@ -118,7 +109,7 @@ with gr.Blocks(css=css) as demo:
         
         submit_button.click(
             fn=run, 
-            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality, num_iters_slider, optimizer_radio], 
+            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], 
             outputs=[content_and_output]
         ).then(
             fn=save_image,
@@ -147,9 +138,13 @@ with gr.Blocks(css=css) as demo:
         )
         
         examples = gr.Examples(
-            label='Example',
-            examples=[['./content_images/Bridge.jpg', 'Starry Night', 100, False, 35, 'AdamW']],
-            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality, num_iters_slider, optimizer_radio]
+            examples=[
+                ['./content_images/Bridge.jpg', 'Starry Night', *optimal_settings['Starry Night']],
+                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', *optimal_settings['Lego Bricks']],
+                ['./content_images/SeaTurtle.jpg', 'Oil Painting', *optimal_settings['Oil Painting']],
+                ['./content_images/NYCSkyline.jpg', 'Scream', *optimal_settings['Scream']]
+            ],
+            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
         )
 
 demo.queue = False

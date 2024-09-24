@@ -27,24 +27,22 @@ def inference(
     style_features,
     lr,
     iterations=35,
-    optim_caller=optim.AdamW,
     alpha=1,
     beta=1
 ):
     generated_image = content_image.clone().requires_grad_(True)
-    optimizer = optim_caller([generated_image], lr=lr)
+    optimizer = optim.AdamW([generated_image], lr=lr)
 
     with torch.no_grad():
         content_features = model(content_image)
-        
-    def closure():
-        optimizer.zero_grad()
-        generated_features = model(generated_image)
-        total_loss = _compute_loss(generated_features, content_features, style_features, alpha, beta)
-        total_loss.backward()
-        return total_loss
     
     for _ in tqdm(range(iterations), desc='The magic is happening ✨'):
-        optimizer.step(closure)
+        optimizer.zero_grad()
+
+        generated_features = model(generated_image)
+        total_loss = _compute_loss(generated_features, content_features, style_features, alpha, beta)
+
+        total_loss.backward()
+        optimizer.step()
     
     return generated_image
