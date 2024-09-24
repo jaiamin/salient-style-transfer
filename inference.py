@@ -26,33 +26,25 @@ def inference(
     content_image,
     style_features,
     lr,
-    adam_iterations=1,
-    lbfgs_iterations=3,
+    iterations=35,
+    optim_caller=optim.AdamW,
     alpha=1,
-    beta=1,
-    clip_grad_norm=5.0
+    beta=1
 ):
-    torch.manual_seed(42)
-
     generated_image = content_image.clone().requires_grad_(True)
+    optimizer = optim_caller([generated_image], lr=lr)
 
     with torch.no_grad():
         content_features = model(content_image)
         
-    def closure(optimizer):
+    def closure():
         optimizer.zero_grad()
         generated_features = model(generated_image)
         total_loss = _compute_loss(generated_features, content_features, style_features, alpha, beta)
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_([generated_image], max_norm=clip_grad_norm) # clip gradients
         return total_loss
     
-    adam_optimizer = optim.AdamW([generated_image], lr=lr)
-    for _ in tqdm(range(adam_iterations), desc='The magic is happening (1/2) ✨'):
-        adam_optimizer.step(lambda: closure(adam_optimizer))
-
-    lbfgs_optimizer = optim.LBFGS([generated_image], lr=lr)
-    for _ in tqdm(range(lbfgs_iterations), desc='The magic is happening (2/2) ✨'):
-        lbfgs_optimizer.step(lambda: closure(lbfgs_optimizer))
+    for _ in tqdm(range(iterations), desc='The magic is happening ✨'):
+        optimizer.step(closure)
     
     return generated_image
