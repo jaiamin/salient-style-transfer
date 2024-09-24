@@ -6,6 +6,7 @@ from tqdm import tqdm
 import spaces
 import torch
 import torch.optim as optim
+import torch.nn.functional as F
 import gradio as gr
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
@@ -43,25 +44,18 @@ for style_name, style_img_path in style_options.items():
 
 def gram_matrix(feature):
     batch_size, n_feature_maps, height, width = feature.size()
-    return torch.mm(
-        feature.view(batch_size * n_feature_maps, height * width), 
-        feature.view(batch_size * n_feature_maps, height * width).t()
-    )
+    new_feature = feature.view(batch_size * n_feature_maps, height * width)
+    return torch.mm(new_feature, new_feature.t())
 
 def compute_loss(generated_features, content_features, style_features, alpha, beta):
     content_loss = 0
     style_loss = 0
-    
-    for generated_feature, content_feature, style_feature in zip(generated_features, content_features, style_features):
-        content_loss += torch.mean((generated_feature - content_feature) ** 2)
-        
-        G = gram_matrix(generated_feature)
-        A = gram_matrix(style_feature)
-        
-        E_l = ((G - A) ** 2)
-        w_l = 1 / 5
-        style_loss += torch.mean(w_l * E_l)
-
+    w_l = 1 / len(generated_features)
+    for gf, cf, sf in zip(generated_features, content_features, style_features):
+        content_loss += F.mse_loss(gf, cf)
+        G = gram_matrix(gf)
+        A = gram_matrix(sf)
+        style_loss += w_l * F.mse_loss(G, A)
     return alpha * content_loss + beta * style_loss
 
 @spaces.GPU(duration=20)
