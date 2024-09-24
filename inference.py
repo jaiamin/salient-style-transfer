@@ -30,8 +30,8 @@ def inference(
     alpha=1,
     beta=1
 ):
-    geenrated_image = content_image.clone().requires_grad_(True)
-    optimizer = optim.AdamW([geenrated_image], lr=lr)
+    generated_image = content_image.clone().requires_grad_(True)
+    optimizer = optim.AdamW([generated_image], lr=lr)
 
     with torch.no_grad():
         content_features = model(content_image)
@@ -39,10 +39,10 @@ def inference(
     for _ in tqdm(range(iterations), desc='The magic is happening ✨'):
         optimizer.zero_grad()
 
-        generated_features = model(geenrated_image)
+        generated_features = model(generated_image)
         total_loss = _compute_loss(generated_features, content_features, style_features, alpha, beta)
 
         total_loss.backward()
         optimizer.step()
     
-    return geenrated_image
+    return generated_image

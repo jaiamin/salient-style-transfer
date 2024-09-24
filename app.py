@@ -40,7 +40,7 @@ for style_name, style_img_path in style_options.items():
         style_features = (model(style_img_512), model(style_img_1024))
     cached_style_features[style_name] = style_features 
 
-@spaces.GPU(duration=6)
+@spaces.GPU(duration=10)
 def run(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     img_size = 1024 if output_quality else 512
     content_img, original_size = preprocess_img(content_image, img_size)
@@ -66,7 +66,7 @@ def run(content_image, style_name, style_strength, output_quality, progress=gr.P
     et = time.time()
     print('TIME TAKEN:', et-st)
     
-    return postprocess_img(generated_img, original_size)
+    yield postprocess_img(generated_img, original_size)
 
 
 def set_slider(value):
