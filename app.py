@@ -58,7 +58,7 @@ def compute_loss(generated_features, content_features, style_features, alpha, be
         style_loss += w_l * F.mse_loss(G, A)
     return alpha * content_loss + beta * style_loss
 
-@spaces.GPU(duration=20)
+@spaces.GPU(duration=6)
 def inference(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     print('-'*15)
