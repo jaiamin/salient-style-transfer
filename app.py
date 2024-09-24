@@ -30,7 +30,7 @@ optimal_settings = {
     'Oil Painting': (100, False),
     'Scream': (75, True),
     'Great Wave': (75, False),
-    'Watercolor': (10, False),
+    'Watercolor': (75, False),
 }
 
 cached_style_features = {}
@@ -108,7 +108,7 @@ def set_slider(value):
     return gr.update(value=value)
 
 def update_settings(style):
-    return optimal_settings.get(style, (50, True))
+    return optimal_settings.get(style, (100, False))
 
 css = """
 #container {
