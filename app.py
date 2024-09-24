@@ -88,7 +88,8 @@ with gr.Blocks(css=css) as demo:
     with gr.Column(elem_id='container'):
         content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', info='Note: Adjustments automatically optimize for different styles.', value='Starry Night', type='value')
-        with gr.Accordion('Adjustments', open=False):
+        
+        with gr.Accordion('Adjustments', open=True):
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=100, step=1, value=50)
                 
@@ -138,12 +139,8 @@ with gr.Blocks(css=css) as demo:
         )
         
         examples = gr.Examples(
-            examples=[
-                ['./content_images/Bridge.jpg', 'Starry Night', *optimal_settings['Starry Night']],
-                ['./content_images/GoldenRetriever.jpg', 'Lego Bricks', *optimal_settings['Lego Bricks']],
-                ['./content_images/SeaTurtle.jpg', 'Oil Painting', *optimal_settings['Oil Painting']],
-                ['./content_images/NYCSkyline.jpg', 'Scream', *optimal_settings['Scream']]
-            ],
+            label='Example',
+            examples=[['./content_images/Bridge.jpg', 'Starry Night', 100, False]],
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
         )
 
