@@ -33,33 +33,30 @@ optimal_settings = {
     'Watercolor': (75, False),
 }
 
-def gram_matrix(feature):
-    batch_size, n_feature_maps, height, width = feature.size()
-    new_feature = feature.view(batch_size * n_feature_maps, height * width)
-    return torch.mm(new_feature, new_feature.t())
-
-cached_style_gram_matrices = {}
-for style_name, style_img_path in tqdm(style_options.items(), desc='Computing style gram matrices'):
+cached_style_features = {}
+for style_name, style_img_path in style_options.items():
     style_img_512 = preprocess_img_from_path(style_img_path, 512)[0].to(device)
     style_img_1024 = preprocess_img_from_path(style_img_path, 1024)[0].to(device)
     with torch.no_grad():
-        style_features_512 = model(style_img_512)
-        style_features_1024 = model(style_img_1024)
-        # compute gram matrices
-        style_gram_matrices_512 = [gram_matrix(f) for f in style_features_512]
-        style_gram_matrices_1024 = [gram_matrix(f) for f in style_features_1024]
-    cached_style_gram_matrices[style_name] = (style_gram_matrices_512, style_gram_matrices_1024)
-print('Style caching complete.')
+        style_features = (model(style_img_512), model(style_img_1024))
+    cached_style_features[style_name] = style_features 
 
-def compute_loss(generated_features, content_features, style_gram_matrices, alpha, beta):
+def gram_matrix(feature):
+    batch_size, n_feature_maps, height, width = feature.size()
+    return torch.mm(
+        feature.view(batch_size * n_feature_maps, height * width), 
+        feature.view(batch_size * n_feature_maps, height * width).t()
+    )
+
+def compute_loss(generated_features, content_features, style_features, alpha, beta):
     content_loss = 0
     style_loss = 0
     
-    for generated_feature, content_feature, style_gram_matrix in zip(generated_features, content_features, style_gram_matrices):
+    for generated_feature, content_feature, style_feature in zip(generated_features, content_features, style_features):
         content_loss += torch.mean((generated_feature - content_feature) ** 2)
         
         G = gram_matrix(generated_feature)
-        A = style_gram_matrix
+        A = gram_matrix(style_feature)
         
         E_l = ((G - A) ** 2)
         w_l = 1 / 5
@@ -94,13 +91,13 @@ def inference(content_image, style_name, style_strength, output_quality, progres
     with torch.no_grad():
         content_features = model(content_img)
     
-    style_gram_matrices = cached_style_gram_matrices[style_name][0 if img_size == 512 else 1]
+    style_features = cached_style_features[style_name][0 if img_size == 512 else 1]
     
     for _ in tqdm(range(iters), desc='The magic is happening ✨'):
         optimizer.zero_grad()
 
         generated_features = model(generated_img)
-        total_loss = compute_loss(generated_features, content_features, style_gram_matrices, alpha, beta)
+        total_loss = compute_loss(generated_features, content_features, style_features, alpha, beta)
 
         total_loss.backward()
         optimizer.step()
