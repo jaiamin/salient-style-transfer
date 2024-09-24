@@ -66,7 +66,7 @@ def run(content_image, style_name, style_strength, output_quality, progress=gr.P
     et = time.time()
     print('TIME TAKEN:', et-st)
     
-    yield postprocess_img(generated_img, original_size)
+    return postprocess_img(generated_img, original_size)
 
 
 def set_slider(value):
