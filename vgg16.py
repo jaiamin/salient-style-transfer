@@ -52,7 +52,7 @@ VGG(
 class VGG_16(nn.Module):
     def __init__(self):
         super(VGG_16, self).__init__()
-        self.model = models.vgg16(weights=models.VGG16_Weights).features[:30]
+        self.model = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1).features[:30]
         
         for i, _ in enumerate(self.model):
             if i in [4, 9, 16, 23]:

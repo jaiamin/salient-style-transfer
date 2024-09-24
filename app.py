@@ -1,16 +1,14 @@
 import os
 import time
 from datetime import datetime, timezone, timedelta
-from tqdm import tqdm
 
 import spaces
 import torch
-import torch.optim as optim
-import torch.nn.functional as F
 import gradio as gr
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
 from vgg19 import VGG_19
+from inference import inference
 
 if torch.cuda.is_available(): device = 'cuda'
 elif torch.backends.mps.is_available(): device = 'mps'
@@ -42,63 +40,33 @@ for style_name, style_img_path in style_options.items():
         style_features = (model(style_img_512), model(style_img_1024))
     cached_style_features[style_name] = style_features 
 
-def gram_matrix(feature):
-    batch_size, n_feature_maps, height, width = feature.size()
-    new_feature = feature.view(batch_size * n_feature_maps, height * width)
-    return torch.mm(new_feature, new_feature.t())
-
-def compute_loss(generated_features, content_features, style_features, alpha, beta):
-    content_loss = 0
-    style_loss = 0
-    w_l = 1 / len(generated_features)
-    for gf, cf, sf in zip(generated_features, content_features, style_features):
-        content_loss += F.mse_loss(gf, cf)
-        G = gram_matrix(gf)
-        A = gram_matrix(sf)
-        style_loss += w_l * F.mse_loss(G, A)
-    return alpha * content_loss + beta * style_loss
-
 @spaces.GPU(duration=6)
-def inference(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
-    yield None
-    print('-'*15)
-    print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4))
-    print('STYLE:', style_name)
-    
+def run(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     img_size = 1024 if output_quality else 512
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
     
+    print('-'*15)
+    print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
+    print('STYLE:', style_name)
     print('CONTENT IMG SIZE:', original_size)
     print('STYLE STRENGTH:', style_strength)
     print('HIGH QUALITY:', output_quality)
 
-    iters = 35
-    lr = 0.001 + (0.099 / 99) * (style_strength - 1) # [0.001, 0.1]
-    alpha = 1
-    beta = 1
-
-    st = time.time()
-    generated_img = content_img.clone().requires_grad_(True)
-    optimizer = optim.AdamW([generated_img], lr=lr)
-
-    with torch.no_grad():
-        content_features = model(content_img)
     style_features = cached_style_features[style_name][0 if img_size == 512 else 1]
+    converted_lr = 0.001 + (0.099 / 99) * (style_strength - 1)
     
-    for _ in tqdm(range(iters), desc='The magic is happening ✨'):
-        optimizer.zero_grad()
-
-        generated_features = model(generated_img)
-        total_loss = compute_loss(generated_features, content_features, style_features, alpha, beta)
-
-        total_loss.backward()
-        optimizer.step()
-    
+    st = time.time()
+    generated_img = inference(
+        model=model,
+        content_image=content_img,
+        style_features=style_features,
+        lr=converted_lr
+    )
     et = time.time()
     print('TIME TAKEN:', et-st)
     
-    yield postprocess_img(generated_img, original_size)
+    return postprocess_img(generated_img, original_size)
 
 
 def set_slider(value):
@@ -139,7 +107,7 @@ with gr.Blocks(css=css) as demo:
             return filename
         
         submit_button.click(
-            fn=inference, 
+            fn=run, 
             inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], 
             outputs=[content_and_output]
         ).then(
