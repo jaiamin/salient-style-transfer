@@ -26,8 +26,8 @@ def inference(
     content_image,
     style_features,
     lr,
-    iterations=3,
-    optim_caller=optim.LBFGS,
+    iterations=35,
+    optim_caller=optim.AdamW,
     alpha=1,
     beta=1
 ):
