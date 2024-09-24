@@ -29,7 +29,8 @@ def inference(
     iterations=3,
     optim_caller=optim.LBFGS,
     alpha=1,
-    beta=1
+    beta=1,
+    clip_grad_norm=5.0
 ):
     generated_image = content_image.clone().requires_grad_(True)
     optimizer = optim_caller([generated_image], lr=lr)
@@ -42,7 +43,7 @@ def inference(
         generated_features = model(generated_image)
         total_loss = _compute_loss(generated_features, content_features, style_features, alpha, beta)
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_([generated_image], max_norm=1.0) # clip gradients
+        torch.nn.utils.clip_grad_norm_([generated_image], max_norm=clip_grad_norm) # clip gradients
         return total_loss
     
     for _ in tqdm(range(iterations), desc='The magic is happening ✨'):
