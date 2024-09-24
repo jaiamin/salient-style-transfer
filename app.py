@@ -86,18 +86,14 @@ def inference(content_image, style_name, style_strength, output_quality, progres
         content_features = model(content_img)
     style_features = cached_style_features[style_name][0 if img_size == 512 else 1]
     
-    scaler = torch.amp.GradScaler('cuda')
-
     for _ in tqdm(range(iters), desc='The magic is happening ✨'):
         optimizer.zero_grad()
 
-        with torch.amp.autocast('cuda'):
-            generated_features = model(generated_img)
-            total_loss = compute_loss(generated_features, content_features, style_features, alpha, beta)
+        generated_features = model(generated_img)
+        total_loss = compute_loss(generated_features, content_features, style_features, alpha, beta)
 
-        scaler.scale(total_loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        total_loss.backward()
+        optimizer.step()
     
     et = time.time()
     print('TIME TAKEN:', et-st)
