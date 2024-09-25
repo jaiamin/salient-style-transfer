@@ -89,6 +89,6 @@ def inference(
                 foreground_mask_resized = F.interpolate(foreground_mask.unsqueeze(1), size=generated_image.shape[2:], mode='nearest')
                 generated_image.data = generated_image.data * (1 - foreground_mask_resized) + content_image.data * foreground_mask_resized
 
-        if iter % 10 == 0: print(f'[{'Background' if apply_to_background else 'Image'}] Loss ({iter}):', min_losses[iter])
+        if iter % 10 == 0: print(f'[{"Background" if apply_to_background else "Image"}] Loss ({iter}):', min_losses[iter])
 
     return generated_image, background_ratio
