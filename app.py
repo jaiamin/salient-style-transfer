@@ -22,15 +22,6 @@ for param in model.parameters():
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
-optimal_settings = {
-    'Starry Night': (100, False),
-    'Lego Bricks': (100, False),
-    'Mosaic': (100, False),
-    'Oil Painting': (100, False),
-    'Scream': (75, True),
-    'Great Wave': (75, False),
-    'Watercolor': (75, False),
-}
 
 cached_style_features = {}
 for style_name, style_img_path in style_options.items():
@@ -73,9 +64,6 @@ def run(content_image, style_name, style_strength, output_quality, progress=gr.P
 def set_slider(value):
     return gr.update(value=value)
 
-def update_settings(style):
-    return optimal_settings.get(style, (100, False))
-
 css = """
 #container {
     margin: 0 auto;
@@ -87,7 +75,7 @@ with gr.Blocks(css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
     with gr.Column(elem_id='container'):
         content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
-        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', info='Note: Adjustments automatically optimize for different styles.', value='Starry Night', type='value')
+        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         
         with gr.Accordion('Adjustments', open=True):
             with gr.Group():
@@ -125,17 +113,6 @@ with gr.Blocks(css=css) as demo:
             fn=lambda _: gr.update(visible=False),
             inputs=[content_and_output],
             outputs=[download_button]
-        )
-        
-        style_dropdown.change(
-            fn=lambda style: set_slider(update_settings(style)[0]), 
-            inputs=[style_dropdown], 
-            outputs=[style_strength_slider]
-        )
-        style_dropdown.change(
-            fn=lambda style: gr.update(value=update_settings(style)[1]), 
-            inputs=[style_dropdown], 
-            outputs=[output_quality]
         )
         
         examples = gr.Examples(
