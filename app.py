@@ -41,7 +41,7 @@ for style_name, style_img_path in style_options.items():
 
 @spaces.GPU(duration=12)
 def run(content_image, style_name, style_strength=5):
-    yield None, None
+    yield [None] * 3
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
     
@@ -55,32 +55,41 @@ def run(content_image, style_name, style_strength=5):
     
     st = time.time()
     
-    stream_all = torch.cuda.Stream()
-    stream_bg = torch.cuda.Stream()
+    if device == 'cuda':
+        stream_all = torch.cuda.Stream()
+        stream_bg = torch.cuda.Stream()
 
-    def run_inference(apply_to_background, stream):
+    def run_inference_cuda(apply_to_background, stream):
         with torch.cuda.stream(stream):
-            return inference(
-                model=model,
-                segmentation_model=segmentation_model,
-                content_image=content_img,
-                style_features=style_features,
-                lr=lrs[style_strength-1],
-                apply_to_background=apply_to_background
-            )
+            return run_inference(apply_to_background)
+        
+    def run_inference(apply_to_background):
+        return inference(
+            model=model,
+            segmentation_model=segmentation_model,
+            content_image=content_img,
+            style_features=style_features,
+            lr=lrs[style_strength-1],
+            apply_to_background=apply_to_background
+        )
 
     with ThreadPoolExecutor() as executor:
-        future_all = executor.submit(run_inference, False, stream_all)
-        future_bg = executor.submit(run_inference, True, stream_bg)
-        generated_img_all = future_all.result()
-        generated_img_bg = future_bg.result()
+        if device == 'cuda':
+            future_all = executor.submit(run_inference_cuda, False, stream_all)
+            future_bg = executor.submit(run_inference_cuda, True, stream_bg)
+        else:
+            future_all = executor.submit(run_inference, False)
+            future_bg = executor.submit(run_inference, True)
+        generated_img_all, _ = future_all.result()
+        generated_img_bg, bg_ratio = future_bg.result()
 
     et = time.time()
     print('TIME TAKEN:', et-st)
     
     yield (
         (content_image, postprocess_img(generated_img_all, original_size)),
-        (content_image, postprocess_img(generated_img_bg, original_size))
+        (content_image, postprocess_img(generated_img_bg, original_size)),
+        f'{bg_ratio:.2f}'
     )
 
 def set_slider(value):
@@ -115,7 +124,9 @@ with gr.Blocks(css=css) as demo:
         with gr.Column():
             output_image_all = ImageSlider(position=0.15, label='Styled Image', type='pil', interactive=False, show_download_button=False)
             download_button_1 = gr.DownloadButton(label='Download Styled Image', visible=False)
-            output_image_background = ImageSlider(position=0.15, label='Styled Background', type='pil', interactive=False, show_download_button=False)
+            with gr.Group():
+                output_image_background = ImageSlider(position=0.15, label='Styled Background', type='pil', interactive=False, show_download_button=False)
+                bg_ratio_label = gr.Label(label='Background Ratio')
             download_button_2 = gr.DownloadButton(label='Download Styled Background', visible=False)
 
     def save_image(img_tuple1, img_tuple2):
@@ -132,7 +143,7 @@ with gr.Blocks(css=css) as demo:
     submit_button.click(
         fn=run, 
         inputs=[content_image, style_dropdown, style_strength_slider], 
-        outputs=[output_image_all, output_image_background]
+        outputs=[output_image_all, output_image_background, bg_ratio_label]
     ).then(
         fn=save_image,
         inputs=[output_image_all, output_image_background],

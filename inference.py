@@ -52,13 +52,19 @@ def inference(
     with torch.no_grad():
         content_features = model(content_image)
 
-        resized_bg_masks = []        
+        resized_bg_masks = []
+        background_ratio = None
         if apply_to_background:            
             segmentation_output = segmentation_model(content_image)['out']
             segmentation_mask = segmentation_output.argmax(dim=1)
             
             background_mask = (segmentation_mask == 0).float()
             foreground_mask = (segmentation_mask != 0).float()
+            
+            background_pixel_count = background_mask.sum().item()
+            total_pixel_count = segmentation_mask.numel()
+            background_ratio = background_pixel_count / total_pixel_count
+            print(f'Background Detected: {background_ratio * 100:.2f}%')
 
             for cf in content_features:
                 _, _, h_i, w_i = cf.shape
@@ -83,6 +89,6 @@ def inference(
                 foreground_mask_resized = F.interpolate(foreground_mask.unsqueeze(1), size=generated_image.shape[2:], mode='nearest')
                 generated_image.data = generated_image.data * (1 - foreground_mask_resized) + content_image.data * foreground_mask_resized
 
-        if iter % 10 == 0: print(f'Loss ({iter}):', min_losses[iter])
+        if iter % 10 == 0: print(f'[{'Background' if apply_to_background else 'Image'}] Loss ({iter}):', min_losses[iter])
 
-    return generated_image
+    return generated_image, background_ratio
