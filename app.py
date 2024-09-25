@@ -23,21 +23,20 @@ for param in model.parameters():
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
+lrs = np.logspace(np.log10(0.001), np.log10(0.1), 10).tolist()
+img_size = 512
 
 cached_style_features = {}
 for style_name, style_img_path in style_options.items():
-    style_img_512 = preprocess_img_from_path(style_img_path, 512)[0].to(device)
-    style_img_1024 = preprocess_img_from_path(style_img_path, 1024)[0].to(device)
+    style_img = preprocess_img_from_path(style_img_path, img_size)[0].to(device)
     with torch.no_grad():
-        style_features = (model(style_img_512), model(style_img_1024))
+        style_features = model(style_img)
     cached_style_features[style_name] = style_features 
 
-lrs = np.logspace(np.log10(0.001), np.log10(0.1), 10).tolist()
-
 @spaces.GPU(duration=15)
-def run(content_image, style_name, style_strength=5, output_quality=False, progress=gr.Progress(track_tqdm=True)):
+def run(content_image, style_name, style_strength=5, progress=gr.Progress(track_tqdm=True)):
     yield None
-    img_size = 1024 if output_quality else 512
+    img_size = img_size
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
     
@@ -45,10 +44,9 @@ def run(content_image, style_name, style_strength=5, output_quality=False, progr
     print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
     print('STYLE:', style_name)
     print('CONTENT IMG SIZE:', original_size)
-    print('STYLE STRENGTH:', style_strength)
-    print('HIGH QUALITY:', output_quality)
+    print('STYLE STRENGTH:', style_strength, f'(lr={lrs[style_strength-1]})')
 
-    style_features = cached_style_features[style_name][0 if img_size == 512 else 1]
+    style_features = cached_style_features[style_name]
     
     st = time.time()
     generated_img = inference(
@@ -79,15 +77,8 @@ with gr.Blocks(css=css) as demo:
         content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         
-        with gr.Group():
-            style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)
-            with gr.Row():
-                low_button = gr.Button('Low', size='sm').click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
-                medium_button = gr.Button('Medium', size='sm').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
-                high_button = gr.Button('High', size='sm').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
-        
-        output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.')
-        
+        style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)
+                
         submit_button = gr.Button('Submit', variant='primary')
         download_button = gr.DownloadButton(label='Download Image', visible=False)
 
@@ -98,7 +89,7 @@ with gr.Blocks(css=css) as demo:
         
         submit_button.click(
             fn=run, 
-            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality], 
+            inputs=[content_and_output, style_dropdown, style_strength_slider], 
             outputs=[content_and_output]
         ).then(
             fn=save_image,
