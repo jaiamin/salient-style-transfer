@@ -1,6 +1,7 @@
 import os
 import time
 from datetime import datetime, timezone, timedelta
+from concurrent.futures import ThreadPoolExecutor
 
 import spaces
 import torch
@@ -38,9 +39,9 @@ for style_name, style_img_path in style_options.items():
         style_features = model(style_img)
     cached_style_features[style_name] = style_features 
 
-@spaces.GPU(duration=10)
-def run(content_image, style_name, style_strength=5, apply_to_background=False, progress=gr.Progress(track_tqdm=True)):
-    yield None
+@spaces.GPU(duration=12)
+def run(content_image, style_name, style_strength=5, progress=gr.Progress(total=2)):
+    yield None, None
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
     
@@ -53,18 +54,37 @@ def run(content_image, style_name, style_strength=5, apply_to_background=False, 
     style_features = cached_style_features[style_name]
     
     st = time.time()
-    generated_img = inference(
-        model=model,
-        segmentation_model=segmentation_model,
-        content_image=content_img,
-        style_features=style_features,
-        lr=lrs[style_strength-1],
-        apply_to_background=apply_to_background
-    )
+    
+    stream_all = torch.cuda.Stream()
+    stream_bg = torch.cuda.Stream()
+
+    def run_inference(apply_to_background, stream):
+        with torch.cuda.stream(stream):
+            return inference(
+                model=model,
+                segmentation_model=segmentation_model,
+                content_image=content_img,
+                style_features=style_features,
+                lr=lrs[style_strength-1],
+                apply_to_background=apply_to_background
+            )
+
+    with ThreadPoolExecutor() as executor:
+        progress(0, desc='Styling image')
+        future_all = executor.submit(run_inference, False, stream_all)
+        progress(1, desc='Styling background')
+        future_bg = executor.submit(run_inference, True, stream_bg)
+        generated_img_all = future_all.result()
+        generated_img_bg = future_bg.result()
+        progress(2)
+
     et = time.time()
     print('TIME TAKEN:', et-st)
     
-    yield (content_image, postprocess_img(generated_img, original_size))
+    yield (
+        (content_image, postprocess_img(generated_img_all, original_size)),
+        (content_image, postprocess_img(generated_img_bg, original_size))
+    )
 
 def set_slider(value):
     return gr.update(value=value)
@@ -77,50 +97,52 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
-    gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
+    gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Dual Style Transfer: Artistic Output and Background Transformation</h1>")
     with gr.Row(elem_id='container'):
         with gr.Column():
             content_image = gr.Image(label='Content', type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5, info='Higher values add artistic flair, lower values add a realistic feel.')
-                apply_to_background = gr.Checkbox(label='Apply to background only', info='Note: This experimental feature may not always detect desired backgrounds.')
             submit_button = gr.Button('Submit', variant='primary')
             
             examples = gr.Examples(
                 examples=[
-                    ['./content_images/Bridge.jpg', 'Starry Night'],
-                    ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
-                    ['./content_images/CameraGirl.jpg', 'Bokeh']
+                    ['./content_images/Bridge.jpg', 'Starry Night', 6],
+                    ['./content_images/GoldenRetriever.jpg', 'Great Wave', 5],
+                    ['./content_images/CameraGirl.jpg', 'Bokeh', 10]
                 ],
-                inputs=[content_image, style_dropdown]
+                inputs=[content_image, style_dropdown, style_strength_slider]
             )
 
         with gr.Column():
-            output_image = ImageSlider(position=0.15, label='Output', show_label=True, type='pil', interactive=False, show_download_button=False)
-            download_button = gr.DownloadButton(label='Download Image', visible=False)
+            output_image_all = ImageSlider(position=0.15, label='Styled Image', type='pil', interactive=False, show_download_button=False)
+            download_button_1 = gr.DownloadButton(label='Download Styled Image', visible=False)
+            output_image_background = ImageSlider(position=0.15, label='Styled Background', type='pil', interactive=False, show_download_button=False)
+            download_button_2 = gr.DownloadButton(label='Download Styled Background', visible=False)
 
-    def save_image(img_tuple):
-        filename = 'generated.jpg'
-        img_tuple[1].save(filename)
-        return filename
+    def save_image(img_tuple1, img_tuple2):
+        filename1, filename2 = 'generated-all.jpg', 'generated-bg.jpg'
+        img_tuple1[1].save(filename1)
+        img_tuple2[1].save(filename2)
+        return filename1, filename2
     
     submit_button.click(
-        fn=lambda: gr.update(visible=False),
-        outputs=[download_button]
+        fn=lambda: [gr.update(visible=False) for _ in range(2)],
+        outputs=[download_button_1, download_button_2]
     )
         
     submit_button.click(
         fn=run, 
-        inputs=[content_image, style_dropdown, style_strength_slider, apply_to_background], 
-        outputs=[output_image]
+        inputs=[content_image, style_dropdown, style_strength_slider], 
+        outputs=[output_image_all, output_image_background]
     ).then(
         fn=save_image,
-        inputs=[output_image],
-        outputs=[download_button]
+        inputs=[output_image_all, output_image_background],
+        outputs=[download_button_1, download_button_2]
     ).then(
-        fn=lambda: gr.update(visible=True),
-        outputs=[download_button]
+        fn=lambda: [gr.update(visible=True) for _ in range(2)],
+        outputs=[download_button_1, download_button_2]
     )
 
 demo.queue = False
