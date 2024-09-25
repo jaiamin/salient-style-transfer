@@ -36,7 +36,6 @@ for style_name, style_img_path in style_options.items():
 @spaces.GPU(duration=15)
 def run(content_image, style_name, style_strength=5, progress=gr.Progress(track_tqdm=True)):
     yield None
-    img_size = img_size
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
     
@@ -71,13 +70,15 @@ css = """
 }
 """
 
-with gr.Blocks(css=css) as demo:
+with gr.Blocks(theme=gr.themes.Base(), css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
     with gr.Column(elem_id='container'):
         content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
-        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         
-        style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)
+        with gr.Group():
+            style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
+        with gr.Group():
+            style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)
                 
         submit_button = gr.Button('Submit', variant='primary')
         download_button = gr.DownloadButton(label='Download Image', visible=False)
@@ -109,7 +110,6 @@ with gr.Blocks(css=css) as demo:
         examples = gr.Examples(
             examples=[
                 ['./content_images/Bridge.jpg', 'Starry Night'],
-                ['./content_images/NYCSkyline.jpg', 'Mosaic'],
                 ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
                 ['./content_images/CameraGirl.jpg', 'Bokeh']
             ],
