@@ -28,7 +28,6 @@ def _compute_loss(generated_features, content_features, style_features, resized_
         else:
             G = _gram_matrix(gf)
             A = _gram_matrix(sf)
-            style_loss += w_l * F.mse_loss(G, A)
         style_loss += w_l * F.mse_loss(G, A)
         
     return alpha * content_loss + beta * style_loss
@@ -36,6 +35,7 @@ def _compute_loss(generated_features, content_features, style_features, resized_
 def inference(
     *,
     model,
+    segmentation_model,
     content_image,
     style_features,
     apply_to_background,
@@ -53,10 +53,7 @@ def inference(
         content_features = model(content_image)
 
         resized_bg_masks = []        
-        if apply_to_background:
-            segmentation_model = models.segmentation.deeplabv3_resnet101(weights='DEFAULT').eval()
-            segmentation_model = segmentation_model.to(content_image.device)
-            
+        if apply_to_background:            
             segmentation_output = segmentation_model(content_image)['out']
             segmentation_mask = segmentation_output.argmax(dim=1)
             

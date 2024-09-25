@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 import spaces
 import torch
+import torchvision.models as models
 import numpy as np
 import gradio as gr
 from gradio_imageslider import ImageSlider
@@ -21,6 +22,9 @@ if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
 model = VGG_19().to(device).eval()
 for param in model.parameters():
     param.requires_grad = False
+segmentation_model = models.segmentation.deeplabv3_resnet101(
+    weights='DEFAULT'
+).to(device).eval()
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
@@ -51,6 +55,7 @@ def run(content_image, style_name, style_strength=5, apply_to_background=False, 
     st = time.time()
     generated_img = inference(
         model=model,
+        segmentation_model=segmentation_model,
         content_image=content_img,
         style_features=style_features,
         lr=lrs[style_strength-1],
