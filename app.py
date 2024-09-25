@@ -75,8 +75,7 @@ with gr.Blocks(theme=gr.themes.Base(), css=css) as demo:
     with gr.Column(elem_id='container'):
         content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
         
-        with gr.Group():
-            style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
+        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         with gr.Group():
             style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)
                 
