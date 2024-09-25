@@ -33,7 +33,7 @@ def inference(
 ):
     generated_image = content_image.clone().requires_grad_(True)
     optimizer = optim_caller([generated_image], lr=lr)
-    min_losses = [[float('inf')]] * iterations
+    min_losses = [float('inf')] * iterations
 
     with torch.no_grad():
         content_features = model(content_image)
