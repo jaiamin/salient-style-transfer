@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 import spaces
 import torch
+import numpy as np
 import gradio as gr
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
@@ -31,8 +32,10 @@ for style_name, style_img_path in style_options.items():
         style_features = (model(style_img_512), model(style_img_1024))
     cached_style_features[style_name] = style_features 
 
+lrs = np.logspace(np.log10(0.001), np.log10(0.1), 10).tolist()
+
 @spaces.GPU(duration=15)
-def run(content_image, style_name, style_strength=100, output_quality=False, progress=gr.Progress(track_tqdm=True)):
+def run(content_image, style_name, style_strength=5, output_quality=False, progress=gr.Progress(track_tqdm=True)):
     yield None
     img_size = 1024 if output_quality else 512
     content_img, original_size = preprocess_img(content_image, img_size)
@@ -46,14 +49,13 @@ def run(content_image, style_name, style_strength=100, output_quality=False, pro
     print('HIGH QUALITY:', output_quality)
 
     style_features = cached_style_features[style_name][0 if img_size == 512 else 1]
-    converted_lr = 0.001 + (0.009 / 99) * (style_strength - 1) # [0.001, 0.01]
     
     st = time.time()
     generated_img = inference(
         model=model,
         content_image=content_img,
         style_features=style_features,
-        lr=converted_lr
+        lr=lrs[style_strength-1]
     )
     et = time.time()
     print('TIME TAKEN:', et-st)
@@ -78,7 +80,7 @@ with gr.Blocks(css=css) as demo:
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         
         with gr.Group():
-            style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=100, step=1, value=100)
+            style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)
             with gr.Row():
                 low_button = gr.Button('Low', size='sm').click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
                 medium_button = gr.Button('Medium', size='sm').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
