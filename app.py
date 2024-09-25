@@ -6,6 +6,7 @@ import spaces
 import torch
 import numpy as np
 import gradio as gr
+from gradio_imageslider import ImageSlider
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
 from vgg19 import VGG_19
@@ -57,8 +58,7 @@ def run(content_image, style_name, style_strength=5, progress=gr.Progress(track_
     et = time.time()
     print('TIME TAKEN:', et-st)
     
-    yield postprocess_img(generated_img, original_size)
-
+    yield (content_image, postprocess_img(generated_img, original_size))
 
 def set_slider(value):
     return gr.update(value=value)
@@ -66,54 +66,55 @@ def set_slider(value):
 css = """
 #container {
     margin: 0 auto;
-    max-width: 550px;
+    max-width: 1100px;
 }
 """
 
 with gr.Blocks(css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer</h1>")
-    with gr.Column(elem_id='container'):
-        content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
-        
-        style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
-        with gr.Group():
-            style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)
-                
-        submit_button = gr.Button('Submit', variant='primary')
-        download_button = gr.DownloadButton(label='Download Image', visible=False)
+    with gr.Row(elem_id='container'):
+        with gr.Column():
+            content_image = gr.Image(label='Content', type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
+            style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
+            with gr.Group():
+                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5)                    
+            submit_button = gr.Button('Submit', variant='primary')
+            
+            examples = gr.Examples(
+                examples=[
+                    ['./content_images/Bridge.jpg', 'Starry Night'],
+                    ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
+                    ['./content_images/CameraGirl.jpg', 'Bokeh']
+                ],
+                inputs=[content_image, style_dropdown]
+            )
 
-        def save_image(img):
-            filename = 'generated.jpg'
-            img.save(filename)
-            return filename
+        with gr.Column():
+            output_image = ImageSlider(position=0.15, label='Output', show_label=False, type='pil', interactive=False, show_download_button=False)
+            download_button = gr.DownloadButton(label='Download Image', visible=False)
+
+    def save_image(img_tuple):
+        filename = 'generated.jpg'
+        img_tuple[1].save(filename)
+        return filename
+    
+    submit_button.click(
+        fn=lambda: gr.update(visible=False),
+        outputs=[download_button]
+    )
         
-        submit_button.click(
-            fn=run, 
-            inputs=[content_and_output, style_dropdown, style_strength_slider], 
-            outputs=[content_and_output]
-        ).then(
-            fn=save_image,
-            inputs=[content_and_output],
-            outputs=[download_button]
-        ).then(
-            fn=lambda: gr.update(visible=True),
-            outputs=[download_button]
-        )
-        
-        content_and_output.change(
-            fn=lambda _: gr.update(visible=False),
-            inputs=[content_and_output],
-            outputs=[download_button]
-        )
-        
-        examples = gr.Examples(
-            examples=[
-                ['./content_images/Bridge.jpg', 'Starry Night'],
-                ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
-                ['./content_images/CameraGirl.jpg', 'Bokeh']
-            ],
-            inputs=[content_and_output, style_dropdown]
-        )
+    submit_button.click(
+        fn=run, 
+        inputs=[content_image, style_dropdown, style_strength_slider], 
+        outputs=[output_image]
+    ).then(
+        fn=save_image,
+        inputs=[output_image],
+        outputs=[download_button]
+    ).then(
+        fn=lambda: gr.update(visible=True),
+        outputs=[download_button]
+    )
 
 demo.queue = False
 demo.config['queue'] = False

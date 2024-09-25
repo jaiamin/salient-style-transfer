@@ -3,5 +3,6 @@ torch
 torchvision
 pillow
 gradio
+gradio_imageslider
 spaces
 tqdm
