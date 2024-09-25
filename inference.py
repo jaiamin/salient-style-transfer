@@ -48,6 +48,6 @@ def inference(
     
     for iter in tqdm(range(iterations), desc='The magic is happening ✨'):
         optimizer.step(lambda: closure(iter))
-        print(f'Loss ({iter+1}):', min_losses[iter])
+        if iter % 10 == 0: print(f'Loss ({iter+1}):', min_losses[iter])
     
     return generated_image
