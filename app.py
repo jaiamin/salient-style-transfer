@@ -35,7 +35,7 @@ for style_name, style_img_path in style_options.items():
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=10)
-def run(content_image, style_name, style_strength=5, progress=gr.Progress(track_tqdm=True)):
+def run(content_image, style_name, style_strength=5, apply_to_background=False, progress=gr.Progress(track_tqdm=True)):
     yield None
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
@@ -53,7 +53,8 @@ def run(content_image, style_name, style_strength=5, progress=gr.Progress(track_
         model=model,
         content_image=content_img,
         style_features=style_features,
-        lr=lrs[style_strength-1]
+        lr=lrs[style_strength-1],
+        apply_to_background=apply_to_background
     )
     et = time.time()
     print('TIME TAKEN:', et-st)
@@ -78,6 +79,7 @@ with gr.Blocks(css=css) as demo:
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5, info='Higher values add artistic flair, lower values add a realistic feel.')
+                apply_to_background = gr.Checkbox(label='Apply to background only')
             submit_button = gr.Button('Submit', variant='primary')
             
             examples = gr.Examples(
@@ -105,7 +107,7 @@ with gr.Blocks(css=css) as demo:
         
     submit_button.click(
         fn=run, 
-        inputs=[content_image, style_dropdown, style_strength_slider], 
+        inputs=[content_image, style_dropdown, style_strength_slider, apply_to_background], 
         outputs=[output_image]
     ).then(
         fn=save_image,
