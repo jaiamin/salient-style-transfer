@@ -90,7 +90,7 @@ with gr.Blocks(css=css) as demo:
             )
 
         with gr.Column():
-            output_image = ImageSlider(position=0.15, label='Output', show_label=False, type='pil', interactive=False, show_download_button=False)
+            output_image = ImageSlider(position=0.15, label='Output', show_label=True, type='pil', interactive=False, show_download_button=False)
             download_button = gr.DownloadButton(label='Download Image', visible=False)
 
     def save_image(img_tuple):
