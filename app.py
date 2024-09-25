@@ -40,7 +40,7 @@ for style_name, style_img_path in style_options.items():
         style_features = (model(style_img_512), model(style_img_1024))
     cached_style_features[style_name] = style_features 
 
-@spaces.GPU(duration=10)
+@spaces.GPU(duration=15)
 def run(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
     yield None
     img_size = 1024 if output_quality else 512

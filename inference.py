@@ -33,18 +33,21 @@ def inference(
 ):
     generated_image = content_image.clone().requires_grad_(True)
     optimizer = optim_caller([generated_image], lr=lr)
+    min_losses = [[]] * iterations
 
     with torch.no_grad():
         content_features = model(content_image)
         
-    def closure():
+    def closure(iter):
         optimizer.zero_grad()
         generated_features = model(generated_image)
         total_loss = _compute_loss(generated_features, content_features, style_features, alpha, beta)
         total_loss.backward()
+        min_losses[iter] = min(min_losses[iter], total_loss.item())
         return total_loss
     
-    for _ in tqdm(range(iterations), desc='The magic is happening ✨'):
+    for iter in tqdm(range(iterations), desc='The magic is happening ✨'):
         optimizer.step(closure)
+        print(f'Loss ({iter+1}):', min_losses[iter])
     
     return generated_image
