@@ -32,7 +32,7 @@ for style_name, style_img_path in style_options.items():
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=15)
-def run(content_image, style_name, style_strength, output_quality, progress=gr.Progress(track_tqdm=True)):
+def run(content_image, style_name, style_strength=100, output_quality=False, progress=gr.Progress(track_tqdm=True)):
     yield None
     img_size = 1024 if output_quality else 512
     content_img, original_size = preprocess_img(content_image, img_size)
