@@ -84,7 +84,7 @@ with gr.Blocks(css=css) as demo:
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5, info='Higher values add artistic flair, lower values add a realistic feel.')
-                apply_to_background = gr.Checkbox(label='Apply to background only')
+                apply_to_background = gr.Checkbox(label='Apply to background only', info='Note: This experimental feature may not always detect desired backgrounds.')
             submit_button = gr.Button('Submit', variant='primary')
             
             examples = gr.Examples(
