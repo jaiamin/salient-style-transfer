@@ -55,7 +55,7 @@ def run(content_image, style_name, style_strength, output_quality, progress=gr.P
     print('HIGH QUALITY:', output_quality)
 
     style_features = cached_style_features[style_name][0 if img_size == 512 else 1]
-    converted_lr = 0.001 + (0.099 / 99) * (style_strength - 1)
+    converted_lr = 0.001 + (0.009 / 99) * (style_strength - 1) # [0.001, 0.01]
     
     st = time.time()
     generated_img = inference(

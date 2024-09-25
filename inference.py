@@ -26,7 +26,7 @@ def inference(
     content_image,
     style_features,
     lr,
-    iterations=35,
+    iterations=100,
     optim_caller=optim.AdamW,
     alpha=1,
     beta=1
