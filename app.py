@@ -77,16 +77,14 @@ with gr.Blocks(css=css) as demo:
         content_and_output = gr.Image(label='Content', show_label=False, type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
         style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
         
-        with gr.Accordion('Adjustments', open=True):
-            with gr.Group():
-                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=100, step=1, value=50)
-                
-                with gr.Row():
-                    low_button = gr.Button('Low', size='sm').click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
-                    medium_button = gr.Button('Medium', size='sm').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
-                    high_button = gr.Button('High', size='sm').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
-            with gr.Group():
-                output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.')
+        with gr.Group():
+            style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=100, step=1, value=100)
+            with gr.Row():
+                low_button = gr.Button('Low', size='sm').click(fn=lambda: set_slider(10), outputs=[style_strength_slider])
+                medium_button = gr.Button('Medium', size='sm').click(fn=lambda: set_slider(50), outputs=[style_strength_slider])
+                high_button = gr.Button('High', size='sm').click(fn=lambda: set_slider(100), outputs=[style_strength_slider])
+        
+        output_quality = gr.Checkbox(label='More Realistic', info='Note: If unchecked, the resulting image will have a more artistic flair.')
         
         submit_button = gr.Button('Submit', variant='primary')
         download_button = gr.DownloadButton(label='Download Image', visible=False)
@@ -116,9 +114,13 @@ with gr.Blocks(css=css) as demo:
         )
         
         examples = gr.Examples(
-            label='Example',
-            examples=[['./content_images/Bridge.jpg', 'Starry Night', 100, False]],
-            inputs=[content_and_output, style_dropdown, style_strength_slider, output_quality]
+            examples=[
+                ['./content_images/Bridge.jpg', 'Starry Night'],
+                ['./content_images/NYCSkyline.jpg', 'Mosaic'],
+                ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
+                ['./content_images/CameraGirl.jpg', 'Bokeh']
+            ],
+            inputs=[content_and_output, style_dropdown]
         )
 
 demo.queue = False
