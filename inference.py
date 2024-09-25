@@ -75,7 +75,7 @@ def inference(
         min_losses[iter] = min(min_losses[iter], total_loss.item())
         return total_loss
     
-    for iter in tqdm(range(iterations), desc='The magic is happening ✨'):
+    for iter in range(iterations):
         optimizer.step(lambda: closure(iter))
 
         if apply_to_background:
@@ -84,5 +84,5 @@ def inference(
                 generated_image.data = generated_image.data * (1 - foreground_mask_resized) + content_image.data * foreground_mask_resized
 
         if iter % 10 == 0: print(f'Loss ({iter}):', min_losses[iter])
-    
+
     return generated_image
