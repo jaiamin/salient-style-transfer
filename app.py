@@ -40,7 +40,7 @@ for style_name, style_img_path in style_options.items():
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=12)
-def run(content_image, style_name, style_strength=5, progress=gr.Progress(total=2)):
+def run(content_image, style_name, style_strength=5):
     yield None, None
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
@@ -70,13 +70,10 @@ def run(content_image, style_name, style_strength=5, progress=gr.Progress(total=
             )
 
     with ThreadPoolExecutor() as executor:
-        progress(0, desc='Styling image')
         future_all = executor.submit(run_inference, False, stream_all)
-        progress(1, desc='Styling background')
         future_bg = executor.submit(run_inference, True, stream_bg)
         generated_img_all = future_all.result()
         generated_img_bg = future_bg.result()
-        progress(2)
 
     et = time.time()
     print('TIME TAKEN:', et-st)
