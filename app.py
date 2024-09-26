@@ -98,7 +98,7 @@ def set_slider(value):
 css = """
 #container {
     margin: 0 auto;
-    max-width: 1500px;
+    max-width: 1200px;
 }
 """
 
