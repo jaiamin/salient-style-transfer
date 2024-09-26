@@ -98,7 +98,7 @@ def set_slider(value):
 css = """
 #container {
     margin: 0 auto;
-    max-width: 1200px;
+    max-width: 1500px;
 }
 """
 
@@ -114,7 +114,7 @@ with gr.Blocks(css=css) as demo:
             
             examples = gr.Examples(
                 examples=[
-                    ['./content_images/Bridge.jpg', 'Starry Night', 6],
+                    ['./content_images/Surfer.jpg', 'Starry Night', 10],
                     ['./content_images/GoldenRetriever.jpg', 'Great Wave', 5],
                     ['./content_images/CameraGirl.jpg', 'Bokeh', 10]
                 ],
