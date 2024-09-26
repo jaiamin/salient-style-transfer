@@ -103,7 +103,7 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
-    gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer w/ Salient Object Segmentation")
+    gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer w/ Salient Object Detection")
     with gr.Row(elem_id='container'):
         with gr.Column():
             content_image = gr.Image(label='Content', type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)

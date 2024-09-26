@@ -1,8 +1,13 @@
+import os
+from tqdm import tqdm
+
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms.functional import gaussian_blur
+
+DEV_MODE = os.environ.get('DEV_MODE', None)
+print('DEV MODE:', True if DEV_MODE else False)
 
 def _gram_matrix(feature):
     batch_size, n_feature_maps, height, width = feature.size()
@@ -44,7 +49,9 @@ def inference(
     alpha=1,
     beta=1,
 ):
-    writer = SummaryWriter()
+    if DEV_MODE: 
+        from torch.utils.tensorboard import SummaryWriter
+        writer = SummaryWriter()
     generated_image = content_image.clone().requires_grad_(True)
     optimizer = optim_caller([generated_image], lr=lr)
     min_losses = [float('inf')] * iterations
@@ -78,16 +85,17 @@ def inference(
         total_loss.backward()
         
         # log loss
-        writer.add_scalars(f'style-{"background" if apply_to_background else "image"}', {
-            'Loss/content': content_loss.item(),
-            'Loss/style': style_loss.item(),
-            'Loss/total': total_loss.item()
-        }, iter)
+        if DEV_MODE:
+            writer.add_scalars(f'style-{"background" if apply_to_background else "image"}', {
+                'Loss/content': content_loss.item(),
+                'Loss/style': style_loss.item(),
+                'Loss/total': total_loss.item()
+            }, iter)
         min_losses[iter] = min(min_losses[iter], total_loss.item())
         
         return total_loss
     
-    for iter in range(iterations):
+    for iter in tqdm(range(iterations)):
         optimizer.step(lambda: closure(iter))
 
         if apply_to_background:
@@ -95,6 +103,7 @@ def inference(
                 foreground_mask_resized = F.interpolate(foreground_mask.unsqueeze(1), size=generated_image.shape[2:], mode='nearest')
                 generated_image.data = generated_image.data * (1 - foreground_mask_resized) + content_image.data * foreground_mask_resized
 
-    writer.flush()
-    writer.close()
+    if DEV_MODE:
+        writer.flush()
+        writer.close()
     return generated_image, background_ratio
