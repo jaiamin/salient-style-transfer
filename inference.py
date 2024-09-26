@@ -1,10 +1,15 @@
-from tqdm import tqdm
-
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
 from torchvision.transforms.functional import gaussian_blur
-from torchvision import models
+
+def save_mask(mask, title='mask'):
+    plt.imshow(mask.cpu().numpy()[0], cmap='gray')
+    plt.title(title)
+    plt.axis('off')
+    plt.savefig(f'{title}.png', bbox_inches='tight')
+    plt.close()
 
 def _gram_matrix(feature):
     batch_size, n_feature_maps, height, width = feature.size()
@@ -57,9 +62,9 @@ def inference(
         if apply_to_background:            
             segmentation_output = segmentation_model(content_image)['out']
             segmentation_mask = segmentation_output.argmax(dim=1)
-            
             background_mask = (segmentation_mask == 0).float()
-            foreground_mask = (segmentation_mask != 0).float()
+            foreground_mask = 1 - background_mask
+            save_mask(background_mask, title='background-mask')
             
             background_pixel_count = background_mask.sum().item()
             total_pixel_count = segmentation_mask.numel()
