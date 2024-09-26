@@ -49,7 +49,7 @@ def run(content_image, style_name, style_strength=5):
     print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
     print('STYLE:', style_name)
     print('CONTENT IMG SIZE:', original_size)
-    print('STYLE STRENGTH:', style_strength, f'(lr={lrs[style_strength-1]})')
+    print('STYLE STRENGTH:', style_strength, f'(lr={lrs[style_strength-1]:.3f})')
 
     style_features = cached_style_features[style_name]
     

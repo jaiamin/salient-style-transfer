@@ -165,11 +165,11 @@ cython_debug/
 #.idea/
 
 # Gradio
-gradio_cached_examples
-flagged
-*.jpg
-*.jpeg
-*.png
+/gradio_cached_examples
+/flagged
+/*.jpg
+/*.jpeg
+/*.png
 
 # Tensorboard
-runs/
+/runs
