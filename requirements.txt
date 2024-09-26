@@ -6,3 +6,4 @@ gradio
 gradio_imageslider
 spaces
 tqdm
+tensorboard
