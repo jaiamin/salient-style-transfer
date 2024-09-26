@@ -11,7 +11,7 @@ import gradio as gr
 from gradio_imageslider import ImageSlider
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
-from vgg19 import VGG_19
+from vgg.vgg19 import VGG_19
 from inference import inference
 
 if torch.cuda.is_available(): device = 'cuda'
