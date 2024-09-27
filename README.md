@@ -1,5 +1,5 @@
 ---
-title: salient-style-transfer
+title: Salient Style Transfer
 emoji: 🖼️
 colorFrom: blue
 colorTo: yellow
