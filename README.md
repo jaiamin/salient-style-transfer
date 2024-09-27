@@ -1,5 +1,5 @@
 ---
-title: Style Transfer w/ Salient Object Masking
+title: Style Transfer with Salient Object Masking
 emoji: 🖼️
 app_file: app.py
 sdk: gradio
