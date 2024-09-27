@@ -1,5 +1,5 @@
 ---
-title: salient-transfer-style
+title: salient-style-transfer
 emoji: 🖼️
 app_file: app.py
 sdk: gradio
