@@ -81,7 +81,7 @@ def run(content_image, style_name, style_strength=5):
             future_all = executor.submit(run_inference, False)
             future_bg = executor.submit(run_inference, True)
         generated_img_all, _ = future_all.result()
-        generated_img_bg, bg_ratio = future_bg.result()
+        generated_img_bg, salient_object_ratio = future_bg.result()
 
     et = time.time()
     print('TIME TAKEN:', et-st)
@@ -89,7 +89,7 @@ def run(content_image, style_name, style_strength=5):
     yield (
         (content_image, postprocess_img(generated_img_all, original_size)),
         (content_image, postprocess_img(generated_img_bg, original_size)),
-        f'{bg_ratio:.2f}'
+        f'{salient_object_ratio:.2f}'
     )
 
 def set_slider(value):
@@ -126,7 +126,7 @@ with gr.Blocks(css=css) as demo:
             download_button_1 = gr.DownloadButton(label='Download Styled Image', visible=False)
             with gr.Group():
                 output_image_background = ImageSlider(position=0.15, label='Styled Background', type='pil', interactive=False, show_download_button=False)
-                bg_ratio_label = gr.Label(label='Background Ratio')
+                salient_object_ratio_label = gr.Label(label='Salient Object Ratio')
             download_button_2 = gr.DownloadButton(label='Download Styled Background', visible=False)
 
     def save_image(img_tuple1, img_tuple2):
@@ -143,7 +143,7 @@ with gr.Blocks(css=css) as demo:
     submit_button.click(
         fn=run, 
         inputs=[content_image, style_dropdown, style_strength_slider], 
-        outputs=[output_image_all, output_image_background, bg_ratio_label]
+        outputs=[output_image_all, output_image_background, salient_object_ratio_label]
     ).then(
         fn=save_image,
         inputs=[output_image_all, output_image_background],

@@ -60,16 +60,16 @@ def inference(
         content_features = model(content_image)
 
         resized_bg_masks = []
-        background_ratio = None
+        salient_object_ratio = None
         if apply_to_background:            
             segmentation_output = segmentation_model(content_image)['out']
             segmentation_mask = segmentation_output.argmax(dim=1)
             background_mask = (segmentation_mask == 0).float()
             foreground_mask = 1 - background_mask
             
-            background_pixel_count = background_mask.sum().item()
+            salient_object_pixel_count = foreground_mask.sum().item()
             total_pixel_count = segmentation_mask.numel()
-            background_ratio = background_pixel_count / total_pixel_count
+            salient_object_ratio = salient_object_pixel_count / total_pixel_count
 
             for cf in content_features:
                 _, _, h_i, w_i = cf.shape
@@ -106,4 +106,4 @@ def inference(
     if DEV_MODE:
         writer.flush()
         writer.close()
-    return generated_image, background_ratio
+    return generated_image, salient_object_ratio
