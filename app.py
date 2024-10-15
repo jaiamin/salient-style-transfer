@@ -40,7 +40,7 @@ for style_name, style_img_path in style_options.items():
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=12)
-def run(content_image, style_name, style_strength=5):
+def run(content_image, style_name, style_strength=10):
     yield [None] * 3
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img = content_img.to(device)
@@ -114,11 +114,10 @@ with gr.Blocks(css=css) as demo:
             
             examples = gr.Examples(
                 examples=[
-                    ['./content_images/Surfer.jpg', 'Starry Night', 10],
-                    ['./content_images/GoldenRetriever.jpg', 'Great Wave', 5],
-                    ['./content_images/CameraGirl.jpg', 'Bokeh', 10]
+                    ['./content_images/GoldenRetriever.jpg', 'Starry Night'],
+                    ['./content_images/CameraGirl.jpg', 'Bokeh']
                 ],
-                inputs=[content_image, style_dropdown, style_strength_slider]
+                inputs=[content_image, style_dropdown]
             )
 
         with gr.Column():
