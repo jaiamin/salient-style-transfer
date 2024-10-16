@@ -39,7 +39,7 @@ for style_name, style_img_path in style_options.items():
         style_features = model(style_img)
     cached_style_features[style_name] = style_features 
 
-@spaces.GPU(duration=12)
+@spaces.GPU(duration=20)
 def run(content_image, style_name, style_strength=10):
     yield [None] * 3
     content_img, original_size = preprocess_img(content_image, img_size)
