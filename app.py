@@ -34,7 +34,7 @@ model = VGG_19().to(device).eval()
 for param in model.parameters():
     param.requires_grad = False
 sod_model = U2Net().to(device).eval()
-load_model_without_module(sod_model, 'u2net/saved_models/best-u2net-duts.safetensors')
+load_model_without_module(sod_model, 'u2net/saved_models/u2net.safetensors')
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
