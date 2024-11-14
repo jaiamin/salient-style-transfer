@@ -51,8 +51,7 @@ if __name__ == '__main__':
     # ---
     model = U2Net().to(device)
     model = nn.DataParallel(model)
-    state_dict = torch.load(model_path, map_location=device, weights_only=True)
-    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
     model.eval()
 
     mask = run_inference(model, image_path, threshold=None)

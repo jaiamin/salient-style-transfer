@@ -22,7 +22,7 @@ print('DEVICE:', device)
 if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
 
 def load_model_without_module(model, model_path):
-    state_dict = torch.load(model_path, map_location=device, weights_only=True)
+    state_dict = torch.load(model_path, map_location=device, weights_only=False)
 
     new_state_dict = {}
     for k, v in state_dict.items():
