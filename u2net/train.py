@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.amp import autocast, GradScaler
+from safetensors.torch import save_file
 
 from data_loader import DUTSDataset, MSRADataset
 from model import U2Net
@@ -78,11 +79,11 @@ if __name__ == '__main__':
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), f'results/best-{model_name}.pt')
+            save_file(model.state_dict(), f'results/best-{model_name}.safetensors')
             print('Best model saved.')
             
         print(f'Epoch [{epoch+1}/{epochs}], Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f} (Best: {best_val_loss:.4f})')
 
-    torch.save(model.state_dict(), f'results/{model_name}.pt')
+    save_file(model.state_dict(), f'results/{model_name}.safetensors')
     with open('results/loss.txt', 'wb') as f:
         pickle.dump(losses, f)

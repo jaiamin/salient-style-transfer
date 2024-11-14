@@ -9,6 +9,7 @@ import torchvision.models as models
 import numpy as np
 import gradio as gr
 from gradio_imageslider import ImageSlider
+from safetensors.torch import load_file
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
 from vgg.vgg19 import VGG_19
@@ -22,8 +23,7 @@ print('DEVICE:', device)
 if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
 
 def load_model_without_module(model, model_path):
-    state_dict = torch.load(model_path, map_location=device, weights_only=False)
-
+    state_dict = load_file(model_path, device=device)
     new_state_dict = {}
     for k, v in state_dict.items():
         name = k[7:] if k.startswith('module.') else k
