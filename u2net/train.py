@@ -48,13 +48,13 @@ if __name__ == '__main__':
     valid_batch_size = 80
     epochs = 100
     
-    lr = 1e-4
+    lr = 1e-3
     loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
     
     model_name = 'u2net-duts'
     model = U2Net()
     model = torch.nn.DataParallel(model.to(device))
-    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
 
     train_loader = DataLoader(
         ConcatDataset([DUTSDataset(split='train'), MSRADataset(split='train')]), 
@@ -67,6 +67,7 @@ if __name__ == '__main__':
         num_workers=16, persistent_workers=True
     )
     
+    best_val_loss = float('inf')
     losses = {'train': [], 'val': []}
     for epoch in tqdm(range(epochs), desc='Epochs'):
         torch.cuda.empty_cache()
@@ -75,10 +76,12 @@ if __name__ == '__main__':
         losses['train'].append(train_loss)
         losses['val'].append(val_loss)
 
-        if (epoch + 1) % 10 == 0:
-            torch.save(model.state_dict(), f'results/inter-{model_name}.pt')
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            torch.save(model.state_dict(), f'results/best-{model_name}.pt')
+            print('Best model saved.')
             
-        print(f'Epoch [{epoch+1}/{epochs}], Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
+        print(f'Epoch [{epoch+1}/{epochs}], Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f} (Best: {best_val_loss:.4f})')
 
     torch.save(model.state_dict(), f'results/{model_name}.pt')
     with open('results/loss.txt', 'wb') as f:
