@@ -56,18 +56,11 @@ def inference(
         resized_bg_masks = []
         salient_object_ratio = None
         if apply_to_background:
-            # original
-            segmentation_output = sod_model(content_image)['out'] # [1, 21, 512, 512]
-            segmentation_mask = segmentation_output.argmax(dim=1) # [1, 512, 512]
+            segmentation_output = sod_model(content_image)[0]
+            segmentation_output = torch.sigmoid(segmentation_output)
+            segmentation_mask = (segmentation_output > 0.7).float()
             background_mask = (segmentation_mask == 0).float()
             foreground_mask = 1 - background_mask
-            
-            # new
-            # segmentation_output = sod_model(content_image)[0]
-            # segmentation_output = torch.sigmoid(segmentation_output)
-            # segmentation_mask = (segmentation_output > 0.7).float()
-            # background_mask = (segmentation_mask == 0).float()
-            # foreground_mask = 1 - background_mask
             
             salient_object_pixel_count = foreground_mask.sum().item()
             total_pixel_count = segmentation_mask.numel()
