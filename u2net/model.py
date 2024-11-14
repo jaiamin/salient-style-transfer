@@ -29,7 +29,7 @@ class RSU(nn.Module):
         self.conv = ConvBlock(C_in, C_out)
         
         self.enc = nn.ModuleList([ConvBlock(C_out, M)])
-        for i in range(L-2):
+        for _ in range(L-2):
             self.enc.append(ConvBlock(M, M))
             
         self.mid = ConvBlock(M, M, dilation=2)
@@ -148,4 +148,5 @@ class U2Net(nn.Module):
     
     side_out.append(self.lastconv(torch.cat(side_out, dim=1)))       
 
-    return [torch.sigmoid(s.squeeze(1)) for s in side_out]
+    # logits
+    return [s.squeeze(1) for s in side_out]
