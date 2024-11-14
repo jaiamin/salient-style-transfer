@@ -12,6 +12,7 @@ from gradio_imageslider import ImageSlider
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
 from vgg.vgg19 import VGG_19
+from u2net.model import U2Net
 from inference import inference
 
 if torch.cuda.is_available(): device = 'cuda'
@@ -20,10 +21,21 @@ else: device = 'cpu'
 print('DEVICE:', device)
 if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
 
+def load_model_without_module(model, model_path):
+    state_dict = torch.load(model_path, map_location=device, weights_only=True)
+
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        name = k[7:] if k.startswith('module.') else k
+        new_state_dict[name] = v
+    model.load_state_dict(new_state_dict)
+    
 model = VGG_19().to(device).eval()
 for param in model.parameters():
     param.requires_grad = False
-segmentation_model = models.segmentation.deeplabv3_resnet101(
+# sod_model = U2Net().to(device).eval()
+# load_model_without_module(sod_model, 'u2net/saved_models/u2net-duts.pt')
+sod_model = models.segmentation.deeplabv3_resnet101(
     weights='DEFAULT'
 ).to(device).eval()
 
@@ -39,7 +51,7 @@ for style_name, style_img_path in style_options.items():
         style_features = model(style_img)
     cached_style_features[style_name] = style_features 
 
-@spaces.GPU(duration=20)
+@spaces.GPU(duration=30)
 def run(content_image, style_name, style_strength=10):
     yield [None] * 3
     content_img, original_size = preprocess_img(content_image, img_size)
@@ -66,7 +78,7 @@ def run(content_image, style_name, style_strength=10):
     def run_inference(apply_to_background):
         return inference(
             model=model,
-            segmentation_model=segmentation_model,
+            sod_model=sod_model,
             content_image=content_img,
             style_features=style_features,
             lr=lrs[style_strength-1],
@@ -81,7 +93,7 @@ def run(content_image, style_name, style_strength=10):
             future_all = executor.submit(run_inference, False)
             future_bg = executor.submit(run_inference, True)
         generated_img_all, _ = future_all.result()
-        generated_img_bg, salient_object_ratio = future_bg.result()
+        generated_img_bg, bg_ratio = future_bg.result()
 
     et = time.time()
     print('TIME TAKEN:', et-st)
@@ -89,7 +101,7 @@ def run(content_image, style_name, style_strength=10):
     yield (
         (content_image, postprocess_img(generated_img_all, original_size)),
         (content_image, postprocess_img(generated_img_bg, original_size)),
-        f'{salient_object_ratio:.2f}'
+        f'{bg_ratio:.2f}'
     )
 
 def set_slider(value):
@@ -109,7 +121,7 @@ with gr.Blocks(css=css) as demo:
             content_image = gr.Image(label='Content', type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
-                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=10, info='Higher values add artistic flair, lower values add a realistic feel.')
+                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5, info='Higher values add artistic flair, lower values add a realistic feel.')
             submit_button = gr.Button('Submit', variant='primary')
             
             examples = gr.Examples(
@@ -125,7 +137,7 @@ with gr.Blocks(css=css) as demo:
             download_button_1 = gr.DownloadButton(label='Download Styled Image', visible=False)
             with gr.Group():
                 output_image_background = ImageSlider(position=0.15, label='Styled Background', type='pil', interactive=False, show_download_button=False)
-                salient_object_ratio_label = gr.Label(label='Salient Object Ratio')
+                bg_ratio_label = gr.Label(label='Background Ratio')
             download_button_2 = gr.DownloadButton(label='Download Styled Background', visible=False)
 
     def save_image(img_tuple1, img_tuple2):
@@ -142,7 +154,7 @@ with gr.Blocks(css=css) as demo:
     submit_button.click(
         fn=run, 
         inputs=[content_image, style_dropdown, style_strength_slider], 
-        outputs=[output_image_all, output_image_background, salient_object_ratio_label]
+        outputs=[output_image_all, output_image_background, bg_ratio_label]
     ).then(
         fn=save_image,
         inputs=[output_image_all, output_image_background],
