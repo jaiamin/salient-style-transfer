@@ -174,5 +174,5 @@ cython_debug/
 # Tensorboard
 /runs
 
-# Saved models
-saved_models
+# Testing code/data
+/testing
