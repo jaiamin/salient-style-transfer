@@ -38,7 +38,7 @@ load_model_without_module(sod_model, 'u2net/saved_models/u2net-duts-msra.safeten
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
-lrs = np.logspace(np.log10(0.001), np.log10(0.1), 10).tolist()
+lrs = np.logspace(np.log10(0.0025), np.log10(0.25), 10).tolist()
 img_size = 512
 
 cached_style_features = {}

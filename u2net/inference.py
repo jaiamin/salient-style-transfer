@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision import transforms
+from safetensors.torch import load_file
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -46,12 +47,12 @@ def overlay_segmentation(original_image, binary_mask, alpha=0.5):
 
 if __name__ == '__main__':
     # ---
-    model_path = 'results/inter-u2net-duts.pt'
+    model_path = 'results/u2net-duts-msra.safetensors'
     image_path = 'images/ladies.jpg'
     # ---
     model = U2Net().to(device)
     model = nn.DataParallel(model)
-    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
+    model.load_state_dict(load_file(model_path, device=device.type))
     model.eval()
 
     mask = run_inference(model, image_path, threshold=None)
