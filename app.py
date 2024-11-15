@@ -127,7 +127,8 @@ with gr.Blocks(css=css) as demo:
             
             examples = gr.Examples(
                 examples=[
-                    ['./content_images/GoldenRetriever.jpg', 'Starry Night'],
+                    ['./content_images/Surfer.jpg', 'Starry Night'],
+                    ['./content_images/GoldenRetriever.jpg', 'Great Wave'],
                     ['./content_images/CameraGirl.jpg', 'Bokeh']
                 ],
                 inputs=[content_image, style_dropdown]
