@@ -2,6 +2,7 @@
 torch
 torchvision
 safetensors
+huggingface_hub
 pillow
 gradio
 gradio_imageslider

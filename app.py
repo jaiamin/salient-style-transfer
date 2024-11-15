@@ -10,6 +10,7 @@ import numpy as np
 import gradio as gr
 from gradio_imageslider import ImageSlider
 from safetensors.torch import load_file
+from huggingface_hub import hf_hub_download
 
 from utils import preprocess_img, preprocess_img_from_path, postprocess_img
 from vgg.vgg19 import VGG_19
@@ -34,7 +35,8 @@ model = VGG_19().to(device).eval()
 for param in model.parameters():
     param.requires_grad = False
 sod_model = U2Net().to(device).eval()
-load_model_without_module(sod_model, 'u2net/saved_models/u2net-duts-msra.safetensors')
+local_model_path = hf_hub_download(repo_id='jamino30/u2net-saliency', filename='u2net-duts-msra.safetensors')
+load_model_without_module(sod_model, local_model_path)
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
