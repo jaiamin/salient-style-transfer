@@ -40,7 +40,7 @@ load_model_without_module(sod_model, local_model_path)
 
 style_files = os.listdir('./style_images')
 style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
-lrs = np.logspace(np.log10(0.0025), np.log10(0.25), 10).tolist()
+lrs = np.logspace(np.log10(0.001), np.log10(0.1), 10).tolist()
 img_size = 512
 
 cached_style_features = {}
@@ -54,7 +54,8 @@ for style_name, style_img_path in style_options.items():
 def run(content_image, style_name, style_strength=10):
     yield [None] * 3
     content_img, original_size = preprocess_img(content_image, img_size)
-    content_img = content_img.to(device)
+    content_img_normalized, _ = preprocess_img(content_image, img_size, normalize=True)
+    content_img, content_img_normalized = content_img.to(device), content_img_normalized.to(device)
     
     print('-'*15)
     print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
@@ -79,6 +80,7 @@ def run(content_image, style_name, style_strength=10):
             model=model,
             sod_model=sod_model,
             content_image=content_img,
+            content_image_norm=content_img_normalized,
             style_features=style_features,
             lr=lrs[style_strength-1],
             apply_to_background=apply_to_background

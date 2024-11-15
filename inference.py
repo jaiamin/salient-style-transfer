@@ -38,6 +38,7 @@ def inference(
     model,
     sod_model,
     content_image,
+    content_image_norm,
     style_features,
     apply_to_background,
     lr,
@@ -56,7 +57,7 @@ def inference(
         resized_bg_masks = []
         salient_object_ratio = None
         if apply_to_background:
-            segmentation_output = sod_model(content_image)[0]
+            segmentation_output = sod_model(content_image_norm)[0]
             segmentation_output = torch.sigmoid(segmentation_output)
             segmentation_mask = (segmentation_output > 0.7).float()
             background_mask = (segmentation_mask == 0).float()
