@@ -55,17 +55,12 @@ def inference(
         content_features = model(content_image)
 
         resized_bg_masks = []
-        salient_object_ratio = None
         if apply_to_background:
             segmentation_output = sod_model(content_image_norm)[0]
             segmentation_output = torch.sigmoid(segmentation_output)
             segmentation_mask = (segmentation_output > 0.7).float()
             background_mask = (segmentation_mask == 0).float()
             foreground_mask = 1 - background_mask
-            
-            salient_object_pixel_count = foreground_mask.sum().item()
-            total_pixel_count = segmentation_mask.numel()
-            salient_object_ratio = salient_object_pixel_count / total_pixel_count
 
             for cf in content_features:
                 _, _, h_i, w_i = cf.shape
@@ -93,4 +88,4 @@ def inference(
                 foreground_mask_resized = F.interpolate(foreground_mask.unsqueeze(1), size=generated_image.shape[2:], mode='nearest')
                 generated_image.data = generated_image.data * (1 - foreground_mask_resized) + content_image.data * foreground_mask_resized
                 
-    return generated_image, salient_object_ratio
+    return generated_image

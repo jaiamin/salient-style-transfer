@@ -93,16 +93,15 @@ def run(content_image, style_name, style_strength=10):
         else:
             future_all = executor.submit(run_inference, False)
             future_bg = executor.submit(run_inference, True)
-        generated_img_all, _ = future_all.result()
-        generated_img_bg, bg_ratio = future_bg.result()
+        generated_img_all = future_all.result()
+        generated_img_bg = future_bg.result()
 
     et = time.time()
     print('TIME TAKEN:', et-st)
     
     yield (
         (content_image, postprocess_img(generated_img_all, original_size)),
-        (content_image, postprocess_img(generated_img_bg, original_size)),
-        f'{bg_ratio:.2f}'
+        (content_image, postprocess_img(generated_img_bg, original_size))
     )
 
 def set_slider(value):
@@ -116,13 +115,13 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
-    gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer w/ Salient Object Masking")
+    gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer w/ Salient Region Preservation")
     with gr.Row(elem_id='container'):
         with gr.Column():
             content_image = gr.Image(label='Content', type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
-                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=5, info='Higher values add artistic flair, lower values add a realistic feel.')
+                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=10, info='Higher values add artistic flair, lower values add a realistic feel.')
             submit_button = gr.Button('Submit', variant='primary')
             
             examples = gr.Examples(
@@ -139,7 +138,6 @@ with gr.Blocks(css=css) as demo:
             download_button_1 = gr.DownloadButton(label='Download Styled Image', visible=False)
             with gr.Group():
                 output_image_background = ImageSlider(position=0.15, label='Styled Background', type='pil', interactive=False, show_download_button=False)
-                bg_ratio_label = gr.Label(label='Background Ratio')
             download_button_2 = gr.DownloadButton(label='Download Styled Background', visible=False)
 
     def save_image(img_tuple1, img_tuple2):
@@ -156,7 +154,7 @@ with gr.Blocks(css=css) as demo:
     submit_button.click(
         fn=run, 
         inputs=[content_image, style_dropdown, style_strength_slider], 
-        outputs=[output_image_all, output_image_background, bg_ratio_label]
+        outputs=[output_image_all, output_image_background]
     ).then(
         fn=save_image,
         inputs=[output_image_all, output_image_background],
