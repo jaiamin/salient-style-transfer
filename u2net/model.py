@@ -9,17 +9,19 @@ def init_weight(layer):
 
     
 class ConvBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, dilation=1):
+    def __init__(self, in_channel, out_channel, dilation=1, dropout_rate=0.3):
         super(ConvBlock, self).__init__()
         self.conv = nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=1, padding=dilation, dilation=dilation)
         self.bn = nn.BatchNorm2d(out_channel)
         self.relu = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout2d(p=dropout_rate) # custom - add dropout layer
         init_weight(self.conv)
         
     def forward(self, x):
         x = self.conv(x)
         x = self.bn(x)
         x = self.relu(x)
+        self.dropout(x)
         return x
 
 
@@ -93,7 +95,7 @@ class RSU4F(nn.Module):
     
     
 class U2Net(nn.Module):
-  def __init__(self):
+  def __init__(self, dropout_rate=0.3):
     super(U2Net, self).__init__()
     self.enc = nn.ModuleList([
       RSU(L=7, C_in=3, C_out=64, M=32),
@@ -123,6 +125,7 @@ class U2Net(nn.Module):
 
     self.lastconv = nn.Conv2d(6, 1, 1)
     self.downsample = nn.MaxPool2d(2, stride=2)
+    self.dropout = nn.Dropout(p=dropout_rate) # custom - add dropout layer
 
     init_weight(self.lastconv)
     for conv in self.convs:
@@ -143,10 +146,10 @@ class U2Net(nn.Module):
     
     side_out = []
     for i, conv in enumerate(self.convs):
-      if i == 0: side_out.append(conv(dec_out[5]))
-      else: side_out.append(self.upsample(conv(dec_out[5-i]), side_out[0]))
+      if i == 0: side_out.append(self.dropout(conv(dec_out[5])))
+      else: side_out.append(self.upsample(self.dropout(conv(dec_out[5-i])), side_out[0]))
     
     side_out.append(self.lastconv(torch.cat(side_out, dim=1)))       
 
-    # logits
+    # logits (no sigmoid)
     return [s.squeeze(1) for s in side_out]
