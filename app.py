@@ -60,9 +60,15 @@ def run(content_image, style_name, style_strength=10, optim_name='AdamW', apply_
     content_img, content_img_normalized = content_img.to(device), content_img_normalized.to(device)
     style_features = cached_style_features[style_name]
     
-    if optim_name == 'Adam': optim_caller = torch.optim.Adam
-    elif optim_name == 'AdamW': optim_caller = torch.optim.AdamW
-    elif optim_name == 'L-BFGS': optim_caller = torch.optim.LBFGS
+    if optim_name == 'Adam': 
+        optim_caller = torch.optim.Adam
+        iterations = 101
+    elif optim_name == 'AdamW': 
+        optim_caller = torch.optim.AdamW
+        iterations = 101
+    elif optim_name == 'L-BFGS': 
+        optim_caller = torch.optim.LBFGS
+        iterations = 5
     
     print('-'*15)
     print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
@@ -79,7 +85,8 @@ def run(content_image, style_name, style_strength=10, optim_name='AdamW', apply_
         style_features=style_features,
         lr=lrs[style_strength-1],
         apply_to_background=apply_to_background,
-        optim_caller=optim_caller
+        iterations=iterations,
+        optim_caller=optim_caller,
     )
     et = time.time()
     print('TIME TAKEN:', et-st)
