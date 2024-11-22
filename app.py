@@ -166,7 +166,7 @@ with gr.Blocks(css=css) as demo:
         
     submit_button.click(
         fn=run, 
-        inputs=[content_image, style_dropdown, style_strength_slider], 
+        inputs=[content_image, style_dropdown, style_strength_slider, optim_dropdown], 
         outputs=[output_image_all, output_image_background]
     ).then(
         fn=save_image,
