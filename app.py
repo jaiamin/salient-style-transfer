@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import spaces
 import torch
+import torch.optim as optim
 import torchvision.models as models
 import numpy as np
 import gradio as gr
@@ -53,11 +54,18 @@ for style_name, style_img_path in style_options.items():
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=30)
-def run(content_image, style_name, style_strength=10):
+def run(content_image, style_name, style_strength=10, optim_name='AdamW'):
     yield [None] * 3
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img_normalized, _ = preprocess_img(content_image, img_size, normalize=True)
     content_img, content_img_normalized = content_img.to(device), content_img_normalized.to(device)
+    
+    if optim_name == 'Adam':
+        optim_caller = torch.optim.Adam
+    elif optim_name == 'AdamW':
+        optim_caller = torch.optim.AdamW
+    else:
+        optim_caller = torch.optim.LBFGS
     
     print('-'*15)
     print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
@@ -85,7 +93,8 @@ def run(content_image, style_name, style_strength=10):
             content_image_norm=content_img_normalized,
             style_features=style_features,
             lr=lrs[style_strength-1],
-            apply_to_background=apply_to_background
+            apply_to_background=apply_to_background,
+            optim_caller=optim_caller
         )
 
     with ThreadPoolExecutor() as executor:
@@ -124,6 +133,8 @@ with gr.Blocks(css=css) as demo:
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=10, info='Higher values add artistic flair, lower values add a realistic feel.')
+            with gr.Accordion(label='Advanced Options', open=False):
+                optim_dropdown = gr.Radio(choices=['Adam', 'AdamW', 'L-BFGS'], label='Optimizer', value='AdamW', type='value')
             submit_button = gr.Button('Submit', variant='primary')
             
             examples = gr.Examples(
