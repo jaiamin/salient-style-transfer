@@ -30,7 +30,8 @@ def load_model_without_module(model, model_path):
         name = k[7:] if k.startswith('module.') else k
         new_state_dict[name] = v
     model.load_state_dict(new_state_dict)
-    
+   
+# load models 
 model = VGG_19().to(device).eval()
 for param in model.parameters():
     param.requires_grad = False
@@ -43,6 +44,7 @@ style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images
 lrs = np.logspace(np.log10(0.001), np.log10(0.1), 10).tolist()
 img_size = 512
 
+# store style(s) features
 cached_style_features = {}
 for style_name, style_img_path in style_options.items():
     style_img = preprocess_img_from_path(style_img_path, img_size)[0].to(device)

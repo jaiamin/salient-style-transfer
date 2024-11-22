@@ -1,37 +1,24 @@
-import os
-from tqdm import tqdm
-
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from torchvision.transforms.functional import gaussian_blur
+from tqdm import tqdm
 
-def _gram_matrix(feature):
-    batch_size, n_feature_maps, height, width = feature.size()
-    new_feature = feature.view(batch_size * n_feature_maps, height * width)
-    return torch.mm(new_feature, new_feature.t())
+def gram_matrix(feature):
+    b, c, h, w = feature.size()
+    feature = feature.view(b * c, h * w)
+    return feature @ feature.t()
 
-def _compute_loss(generated_features, content_features, style_features, resized_bg_masks, alpha, beta):
-    content_loss = 0
-    style_loss = 0
-    w_l = 1 / len(generated_features)
-    
-    for i, (gf, cf, sf) in enumerate(zip(generated_features, content_features, style_features)):
-        content_loss += F.mse_loss(gf, cf)
-        
-        if resized_bg_masks:
-            blurred_bg_mask = gaussian_blur(resized_bg_masks[i], kernel_size=5)
-            masked_gf = gf * blurred_bg_mask
-            masked_sf = sf * blurred_bg_mask
-            G = _gram_matrix(masked_gf)
-            A = _gram_matrix(masked_sf)
-        else:
-            G = _gram_matrix(gf)
-            A = _gram_matrix(sf)
-        style_loss += w_l * F.mse_loss(G, A)
-        
-    total_loss = alpha * content_loss + beta * style_loss
-    return content_loss, style_loss, total_loss
+def compute_loss(generated, content, style, bg_masks, alpha, beta):
+    content_loss = sum(F.mse_loss(gf, cf) for gf, cf in zip(generated, content))
+    style_loss = sum(
+        F.mse_loss(
+            gram_matrix(gf * bg) if bg is not None else gram_matrix(gf),
+            gram_matrix(sf * bg) if bg is not None else gram_matrix(sf),
+        ) / len(generated)
+        for gf, sf, bg in zip(generated, style, bg_masks or [None] * len(generated))
+    )
+    return alpha * content_loss, beta * style_loss, alpha * content_loss + beta * style_loss
 
 def inference(
     *,
@@ -41,7 +28,7 @@ def inference(
     content_image_norm,
     style_features,
     apply_to_background,
-    lr,
+    lr=5e-2,
     iterations=101,
     optim_caller=optim.AdamW,
     alpha=1,
@@ -49,43 +36,33 @@ def inference(
 ):
     generated_image = content_image.clone().requires_grad_(True)
     optimizer = optim_caller([generated_image], lr=lr)
-    min_losses = [float('inf')] * iterations
 
     with torch.no_grad():
         content_features = model(content_image)
-
-        resized_bg_masks = []
-        if apply_to_background:
-            segmentation_output = sod_model(content_image_norm)[0]
-            segmentation_output = torch.sigmoid(segmentation_output)
-            segmentation_mask = (segmentation_output > 0.7).float()
-            background_mask = (segmentation_mask == 0).float()
-            foreground_mask = 1 - background_mask
-
-            for cf in content_features:
-                _, _, h_i, w_i = cf.shape
-                bg_mask = F.interpolate(background_mask.unsqueeze(1), size=(h_i, w_i), mode='bilinear', align_corners=False)
-                resized_bg_masks.append(bg_mask)
+        bg_masks = None
         
-    def closure(iter):
+        if apply_to_background:
+            seg_output = torch.sigmoid(sod_model(content_image_norm)[0])
+            bg_mask = (seg_output <= 0.7).float()
+            bg_masks = [
+                F.interpolate(bg_mask.unsqueeze(1), size=cf.shape[2:], mode='bilinear', align_corners=False)
+                for cf in content_features
+            ]
+        
+    def closure():
         optimizer.zero_grad()
         generated_features = model(generated_image)
-        content_loss, style_loss, total_loss = _compute_loss(
-            generated_features, content_features, style_features, resized_bg_masks, alpha, beta
+        content_loss, style_loss, total_loss = compute_loss(
+            generated_features, content_features, style_features, bg_masks, alpha, beta
         )
         total_loss.backward()
-        
-        # log loss
-        min_losses[iter] = min(min_losses[iter], total_loss.item())
-        
         return total_loss
     
-    for iter in tqdm(range(iterations)):
-        optimizer.step(lambda: closure(iter))
-
+    for _ in tqdm(range(iterations)):
+        optimizer.step(closure)
         if apply_to_background:
             with torch.no_grad():
-                foreground_mask_resized = F.interpolate(foreground_mask.unsqueeze(1), size=generated_image.shape[2:], mode='nearest')
-                generated_image.data = generated_image.data * (1 - foreground_mask_resized) + content_image.data * foreground_mask_resized
+                fg_mask = F.interpolate(1 - bg_masks[0], size=generated_image.shape[2:], mode='nearest')
+                generated_image.data.mul_(1 - fg_mask).add_(content_image.data * fg_mask)
                 
     return generated_image

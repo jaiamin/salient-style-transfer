@@ -9,19 +9,22 @@ from matplotlib.gridspec import GridSpec
 
 from model import U2Net
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available(): device = 'cuda'
+elif torch.backends.mps.is_available(): device = 'mps'
+else: device = 'cpu'
+device = torch.device(device)
 
 def preprocess_image(image_path):
     img = Image.open(image_path).convert('RGB')
     preprocess = transforms.Compose([
-        transforms.Resize((512, 512)),
+        transforms.Resize((512, 512), interpolation=transforms.InterpolationMode.BILINEAR),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     img = preprocess(img).unsqueeze(0).to(device)
     return img
 
-def run_inference(model, image_path, threshold=0.5):
+def run_inference(model, image_path, threshold=None):
     input_img = preprocess_image(image_path)
     with torch.no_grad():
         d1, *_ = model(input_img)
@@ -47,15 +50,16 @@ def overlay_segmentation(original_image, binary_mask, alpha=0.5):
 
 if __name__ == '__main__':
     # ---
-    model_path = 'results/u2net-duts-msra.safetensors'
-    image_path = 'images/ladies.jpg'
+    model_path = '../testing/u2net-duts-msra.safetensors'
+    filename = input('Filename: ')
+    image_path = f'../content_images/{filename}'
     # ---
     model = U2Net().to(device)
     model = nn.DataParallel(model)
     model.load_state_dict(load_file(model_path, device=device.type))
     model.eval()
 
-    mask = run_inference(model, image_path, threshold=None)
+    mask = run_inference(model, image_path)
     mask_with_threshold = run_inference(model, image_path, threshold=0.7)
     
     fig = plt.figure(figsize=(10, 10))
@@ -74,4 +78,4 @@ if __name__ == '__main__':
         ax.axis('off')
 
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    plt.savefig('inference-output.jpg', format='jpg', bbox_inches='tight', pad_inches=0)
+    plt.savefig('../testing/inference-output.jpg', format='jpg', bbox_inches='tight', pad_inches=0)
