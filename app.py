@@ -9,7 +9,6 @@ import torch.optim as optim
 import torchvision.models as models
 import numpy as np
 import gradio as gr
-from gradio_imageslider import ImageSlider
 from safetensors.torch import load_file
 from huggingface_hub import hf_hub_download
 
@@ -54,66 +53,38 @@ for style_name, style_img_path in style_options.items():
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=30)
-def run(content_image, style_name, style_strength=10, optim_name='AdamW'):
-    yield [None] * 3
+def run(content_image, style_name, style_strength=10, optim_name='AdamW', apply_to_background=False):
+    yield None
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img_normalized, _ = preprocess_img(content_image, img_size, normalize=True)
     content_img, content_img_normalized = content_img.to(device), content_img_normalized.to(device)
+    style_features = cached_style_features[style_name]
     
-    if optim_name == 'Adam':
-        optim_caller = torch.optim.Adam
-    elif optim_name == 'AdamW':
-        optim_caller = torch.optim.AdamW
-    else:
-        optim_caller = torch.optim.LBFGS
+    if optim_name == 'Adam': optim_caller = torch.optim.Adam
+    elif optim_name == 'AdamW': optim_caller = torch.optim.AdamW
+    elif optim_name == 'L-BFGS': optim_caller = torch.optim.LBFGS
     
     print('-'*15)
     print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
     print('STYLE:', style_name)
     print('CONTENT IMG SIZE:', original_size)
     print('STYLE STRENGTH:', style_strength, f'(lr={lrs[style_strength-1]:.3f})')
-
-    style_features = cached_style_features[style_name]
     
     st = time.time()
-    
-    if device == 'cuda':
-        stream_all = torch.cuda.Stream()
-        stream_bg = torch.cuda.Stream()
-
-    def run_inference_cuda(apply_to_background, stream):
-        with torch.cuda.stream(stream):
-            return run_inference(apply_to_background)
-        
-    def run_inference(apply_to_background):
-        return inference(
-            model=model,
-            sod_model=sod_model,
-            content_image=content_img,
-            content_image_norm=content_img_normalized,
-            style_features=style_features,
-            lr=lrs[style_strength-1],
-            apply_to_background=apply_to_background,
-            optim_caller=optim_caller
-        )
-
-    with ThreadPoolExecutor() as executor:
-        if device == 'cuda':
-            future_all = executor.submit(run_inference_cuda, False, stream_all)
-            future_bg = executor.submit(run_inference_cuda, True, stream_bg)
-        else:
-            future_all = executor.submit(run_inference, False)
-            future_bg = executor.submit(run_inference, True)
-        generated_img_all = future_all.result()
-        generated_img_bg = future_bg.result()
-
+    generated_img = inference(
+        model=model,
+        sod_model=sod_model,
+        content_image=content_img,
+        content_image_norm=content_img_normalized,
+        style_features=style_features,
+        lr=lrs[style_strength-1],
+        apply_to_background=apply_to_background,
+        optim_caller=optim_caller
+    )
     et = time.time()
     print('TIME TAKEN:', et-st)
     
-    yield (
-        (content_image, postprocess_img(generated_img_all, original_size)),
-        (content_image, postprocess_img(generated_img_bg, original_size))
-    )
+    yield postprocess_img(generated_img, original_size)
 
 def set_slider(value):
     return gr.update(value=value)
@@ -133,6 +104,8 @@ with gr.Blocks(css=css) as demo:
             style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
                 style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=10, info='Higher values add artistic flair, lower values add a realistic feel.')
+            with gr.Group():
+                apply_to_background_checkbox = gr.Checkbox(label='Apply styling to background only', value=False)
             with gr.Accordion(label='Advanced Options', open=False):
                 optim_dropdown = gr.Radio(choices=['Adam', 'AdamW', 'L-BFGS'], label='Optimizer', value='AdamW', type='value')
             submit_button = gr.Button('Submit', variant='primary')
@@ -147,34 +120,30 @@ with gr.Blocks(css=css) as demo:
             )
 
         with gr.Column():
-            output_image_all = ImageSlider(position=0.15, label='Styled Image', type='pil', interactive=False, show_download_button=False)
-            download_button_1 = gr.DownloadButton(label='Download Styled Image', visible=False)
-            with gr.Group():
-                output_image_background = ImageSlider(position=0.15, label='Styled Background', type='pil', interactive=False, show_download_button=False)
-            download_button_2 = gr.DownloadButton(label='Download Styled Background', visible=False)
+            output_image = gr.Image(label='Output', type='pil', interactive=False, show_download_button=False)
+            download_button = gr.DownloadButton(label='Download Image', visible=False)
 
-    def save_image(img_tuple1, img_tuple2):
-        filename1, filename2 = 'generated-all.jpg', 'generated-bg.jpg'
-        img_tuple1[1].save(filename1)
-        img_tuple2[1].save(filename2)
-        return filename1, filename2
+    def save_image(img):
+        filename = 'generated.jpg'
+        img.save(filename)
+        return filename
     
     submit_button.click(
-        fn=lambda: [gr.update(visible=False) for _ in range(2)],
-        outputs=[download_button_1, download_button_2]
+        fn=lambda: gr.update(visible=False),
+        outputs=download_button
     )
         
     submit_button.click(
         fn=run, 
-        inputs=[content_image, style_dropdown, style_strength_slider, optim_dropdown], 
-        outputs=[output_image_all, output_image_background]
+        inputs=[content_image, style_dropdown, style_strength_slider, optim_dropdown, apply_to_background_checkbox], 
+        outputs=output_image
     ).then(
         fn=save_image,
-        inputs=[output_image_all, output_image_background],
-        outputs=[download_button_1, download_button_2]
+        inputs=output_image,
+        outputs=download_button
     ).then(
-        fn=lambda: [gr.update(visible=True) for _ in range(2)],
-        outputs=[download_button_1, download_button_2]
+        fn=lambda: gr.update(visible=True),
+        outputs=download_button
     )
 
 demo.queue = False
