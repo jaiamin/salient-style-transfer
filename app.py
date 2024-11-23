@@ -68,7 +68,7 @@ def run(content_image, style_name, style_strength=10, optim_name='AdamW', apply_
         iterations = 101
     elif optim_name == 'L-BFGS': 
         optim_caller = torch.optim.LBFGS
-        iterations = 10
+        iterations = 20
     
     print('-'*15)
     print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
