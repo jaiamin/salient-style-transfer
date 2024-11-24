@@ -2,6 +2,7 @@ from PIL import Image
 
 import torch
 import torchvision.transforms as transforms
+from safetensors.torch import load_file
 
 def preprocess_img(img, img_size, normalize=False):
     if type(img) == str: img = Image.open(img)
@@ -34,3 +35,10 @@ def postprocess_img(img, original_size, normalize=False):
     img = transforms.ToPILImage()(img)
     img = img.resize(original_size, Image.Resampling.LANCZOS)
     return img
+
+def load_model_without_module(model, model_path, device):
+    state_dict = {
+        k[7:] if k.startswith('module.') else k: v 
+        for k, v in load_file(model_path, device=device).items()
+    }
+    model.load_state_dict(state_dict)
