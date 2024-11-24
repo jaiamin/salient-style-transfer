@@ -30,9 +30,6 @@ load_model_without_module(
     device=device
 )
 
-model = torch.jit.script(model)
-sod_model = torch.jit.script(sod_model)
-
 style_files = os.listdir('./style_images')
 style_options = {
     'Starry Night': './style_images/Starry_Night.jpg',
