@@ -1,8 +1,6 @@
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
-from torchvision.transforms.functional import gaussian_blur
-from tqdm import tqdm
 
 def gram_matrix(feature):
     b, c, h, w = feature.size()
@@ -28,8 +26,8 @@ def inference(
     content_image_norm,
     style_features,
     apply_to_background,
-    lr=5e-2,
-    iterations=101,
+    lr=1.5e-2,
+    iterations=51,
     optim_caller=optim.AdamW,
     alpha=1,
     beta=1,
@@ -58,7 +56,7 @@ def inference(
         total_loss.backward()
         return total_loss
     
-    for _ in tqdm(range(iterations)):
+    for _ in range(iterations):
         optimizer.step(closure)
         if apply_to_background:
             with torch.no_grad():

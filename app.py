@@ -1,18 +1,16 @@
 import os
 import time
 from datetime import datetime, timezone, timedelta
-from concurrent.futures import ThreadPoolExecutor
 
 import spaces
 import torch
 import torch.optim as optim
-import torchvision.models as models
 import numpy as np
 import gradio as gr
 from safetensors.torch import load_file
 from huggingface_hub import hf_hub_download
 
-from utils import preprocess_img, preprocess_img_from_path, postprocess_img
+from utils import preprocess_img, postprocess_img
 from vgg.vgg19 import VGG_19
 from u2net.model import U2Net
 from inference import inference
@@ -20,8 +18,8 @@ from inference import inference
 if torch.cuda.is_available(): device = 'cuda'
 elif torch.backends.mps.is_available(): device = 'mps'
 else: device = 'cpu'
-print('DEVICE:', device)
-if device == 'cuda': print('CUDA DEVICE:', torch.cuda.get_device_name())
+print('Device:', device)
+if device == 'cuda': print('Name:', torch.cuda.get_device_name())
 
 def load_model_without_module(model, model_path):
     state_dict = load_file(model_path, device=device)
@@ -40,41 +38,42 @@ local_model_path = hf_hub_download(repo_id='jamino30/u2net-saliency', filename='
 load_model_without_module(sod_model, local_model_path)
 
 style_files = os.listdir('./style_images')
-style_options = {' '.join(style_file.split('.')[0].split('_')): f'./style_images/{style_file}' for style_file in style_files}
-lrs = np.logspace(np.log10(0.001), np.log10(0.1), 10).tolist()
+style_options = {
+    'Starry Night': './style_images/Starry_Night.jpg',
+    'Starry Night (v2)': './style_images/Starry_Night_v2.jpg',
+    'Scream': './style_images/Scream.jpg',
+    'Great Wave': './style_images/Great_Wave.jpg',
+    'Oil Painting': './style_images/Oil_Painting.jpg',
+    'Watercolor': './style_images/Watercolor.jpg',
+    'Mosaic': './style_images/Mosaic.jpg',
+    'Lego Bricks': './style_images/Lego_Bricks.jpg',
+    'Bokeh': './style_images/Bokeh.jpg',
+}
+lrs = np.linspace(0.015, 0.075, 3).tolist()
 img_size = 512
 
-# store style(s) features
 cached_style_features = {}
 for style_name, style_img_path in style_options.items():
-    style_img = preprocess_img_from_path(style_img_path, img_size)[0].to(device)
+    style_img = preprocess_img(style_img_path, img_size)[0].to(device)
     with torch.no_grad():
         style_features = model(style_img)
     cached_style_features[style_name] = style_features 
 
 @spaces.GPU(duration=30)
-def run(content_image, style_name, style_strength=10, optim_name='AdamW', apply_to_background=False):
+def run(content_image, style_name, style_strength=len(lrs), optim_name='AdamW', apply_to_background=False):
     yield None
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img_normalized, _ = preprocess_img(content_image, img_size, normalize=True)
     content_img, content_img_normalized = content_img.to(device), content_img_normalized.to(device)
     style_features = cached_style_features[style_name]
     
-    if optim_name == 'Adam': 
-        optim_caller = torch.optim.Adam
-        iterations = 101
-    elif optim_name == 'AdamW': 
-        optim_caller = torch.optim.AdamW
-        iterations = 101
+    if optim_name == 'AdamW': 
+        optim_caller = optim.AdamW
     elif optim_name == 'L-BFGS': 
-        optim_caller = torch.optim.LBFGS
-        iterations = 20
+        optim_caller = optim.LBFGS
     
-    print('-'*15)
-    print('DATETIME:', datetime.now(timezone.utc) - timedelta(hours=4)) # est
-    print('STYLE:', style_name)
-    print('CONTENT IMG SIZE:', original_size)
-    print('STYLE STRENGTH:', style_strength, f'(lr={lrs[style_strength-1]:.3f})')
+    print('-'*30)
+    print(datetime.now(timezone.utc) - timedelta(hours=5)) # EST
     
     st = time.time()
     generated_img = inference(
@@ -85,11 +84,10 @@ def run(content_image, style_name, style_strength=10, optim_name='AdamW', apply_
         style_features=style_features,
         lr=lrs[style_strength-1],
         apply_to_background=apply_to_background,
-        iterations=iterations,
         optim_caller=optim_caller,
     )
     et = time.time()
-    print('TIME TAKEN:', et-st)
+    print(f'{et-st:.2f}s')
     
     yield postprocess_img(generated_img, original_size)
 
@@ -107,14 +105,14 @@ with gr.Blocks(css=css) as demo:
     gr.HTML("<h1 style='text-align: center; padding: 10px'>🖼️ Neural Style Transfer w/ Salient Region Preservation")
     with gr.Row(elem_id='container'):
         with gr.Column():
-            content_image = gr.Image(label='Content', type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
-            style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
             with gr.Group():
-                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=10, step=1, value=10, info='Higher values add artistic flair, lower values add a realistic feel.')
+                content_image = gr.Image(label='Content', type='pil', sources=['upload', 'webcam', 'clipboard'], format='jpg', show_download_button=False)
             with gr.Group():
-                apply_to_background_checkbox = gr.Checkbox(label='Apply styling to background only', value=False)
+                style_dropdown = gr.Radio(choices=list(style_options.keys()), label='Style', value='Starry Night', type='value')
+                style_strength_slider = gr.Slider(label='Style Strength', minimum=1, maximum=len(lrs), step=1, value=len(lrs))
+                apply_to_background_checkbox = gr.Checkbox(label='Apply style transfer exclusively to the background', value=False)
             with gr.Accordion(label='Advanced Options', open=False):
-                optim_dropdown = gr.Radio(choices=['Adam', 'AdamW', 'L-BFGS'], label='Optimizer', value='AdamW', type='value')
+                optim_dropdown = gr.Radio(choices=['AdamW', 'L-BFGS'], label='Optimizer', value='AdamW', type='value')
             submit_button = gr.Button('Submit', variant='primary')
             
             examples = gr.Examples(

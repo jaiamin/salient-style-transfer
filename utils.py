@@ -3,11 +3,8 @@ from PIL import Image
 import torch
 import torchvision.transforms as transforms
 
-def preprocess_img_from_path(path_to_image, img_size, normalize=False):
-    img = Image.open(path_to_image)
-    return preprocess_img(img, img_size, normalize)
-
-def preprocess_img(img: Image, img_size, normalize=False):
+def preprocess_img(img, img_size, normalize=False):
+    if type(img) == str: img = Image.open(img)
     original_size = img.size
     
     if normalize:
