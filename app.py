@@ -133,4 +133,4 @@ with gr.Blocks(css=css) as demo:
 
 demo.queue = False
 demo.config['queue'] = False
-demo.launch(show_api=False)
+demo.launch(show_api=False, share=True)

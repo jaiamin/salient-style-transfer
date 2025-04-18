@@ -4,6 +4,7 @@ torchvision
 safetensors
 huggingface_hub
 pillow
-gradio
+gradio==5.24.0
+gradio_client==1.8.0
 spaces
 tensorboard
