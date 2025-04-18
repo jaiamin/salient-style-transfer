@@ -9,4 +9,4 @@ sdk_version: 4.44.1
 ---
 # Neural Style Transfer w/ Salient Object Masking
 
-Info coming soon
+<img src='media/figure1.jpg'>
