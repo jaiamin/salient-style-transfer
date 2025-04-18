@@ -26,6 +26,7 @@ def inference(
     content_image_norm,
     style_features,
     apply_to_background,
+    progress,
     lr=1.5e-2,
     iterations=51,
     optim_caller=optim.AdamW,
@@ -56,11 +57,12 @@ def inference(
         total_loss.backward()
         return total_loss
     
-    for _ in range(iterations):
+    for iter in range(iterations):
         optimizer.step(closure)
         if apply_to_background:
             with torch.no_grad():
                 fg_mask = F.interpolate(1 - bg_masks[0], size=generated_image.shape[2:], mode='nearest')
                 generated_image.data.mul_(1 - fg_mask).add_(content_image.data * fg_mask)
-                
+        progress((iter+1)/iterations)
+    
     return generated_image

@@ -51,8 +51,9 @@ cached_style_features = {
 }
 
 @spaces.GPU(duration=15)
-def run(content_image, style_name, style_strength=len(lrs), apply_to_background=False):
+def run(content_image, style_name, style_strength=len(lrs), apply_to_background=False, progress=gr.Progress()):
     yield None
+    progress(0)
     content_img, original_size = preprocess_img(content_image, img_size)
     content_img_normalized, _ = preprocess_img(content_image, img_size, normalize=True)
     content_img, content_img_normalized = content_img.to(device), content_img_normalized.to(device)
@@ -70,6 +71,7 @@ def run(content_image, style_name, style_strength=len(lrs), apply_to_background=
         style_features=style_features,
         lr=lrs[style_strength-1],
         apply_to_background=apply_to_background,
+        progress=progress,
     )
     print(f'{time.time()-st:.2f}s')
     
